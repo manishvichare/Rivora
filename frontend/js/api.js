@@ -1,10 +1,10 @@
 /**
  * Rivora API Client
- * Base URL: http://localhost:8000
+ * Same-origin API in production; local backend while using Vite.
  * Handles API communication, authentication tokens, and endpoints.
  */
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = window.location.port === "5173" ? "http://localhost:8000" : window.location.origin;
 
 const RivoraAPI = {
   baseUrl: API_BASE,
