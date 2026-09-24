@@ -6,6 +6,15 @@
 <title>Find a Resource · Rivora</title>
 <link rel="icon" type="image/png" href="images/favicon.png">
 <link rel="stylesheet" href="css/leaflet.css">
+<script>
+(() => {
+  try {
+    const saved = localStorage.getItem('rivora.theme');
+    const systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = saved === 'dark' || saved === 'light' ? saved : (systemDark ? 'dark' : 'light');
+  } catch (_) { document.documentElement.dataset.theme = 'light'; }
+})();
+</script>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>

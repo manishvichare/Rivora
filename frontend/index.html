@@ -5,6 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Rivora — Hospitality Resource Exchange</title>
 <link rel="icon" type="image/png" href="images/favicon.png">
+<script>
+(() => {
+  try {
+    const saved = localStorage.getItem('rivora.theme');
+    const systemDark = !!(window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = saved === 'dark' || saved === 'light' ? saved : (systemDark ? 'dark' : 'light');
+  } catch (_) { document.documentElement.dataset.theme = 'light'; }
+})();
+</script>
 <link rel="stylesheet" href="css/style.css">
 </head>
 <body>

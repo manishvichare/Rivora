@@ -41,6 +41,8 @@ en: {
   "nav.provider": "Provider",
   "nav.seeker": "Seeker",
   "nav.notifications": "Notifications",
+  "theme.switchToDark": "Switch to dark mode",
+  "theme.switchToLight": "Switch to light mode",
 
   "hero.eyebrow": "B2B Hospitality Resource Exchange",
   "hero.title": "Welcome to Rivora",
@@ -555,6 +557,8 @@ mr: {
   "nav.provider": "पुरवठादार",
   "nav.seeker": "शोधकर्ता",
   "nav.notifications": "सूचना",
+  "theme.switchToDark": "गडद मोड सुरू करा",
+  "theme.switchToLight": "प्रकाश मोड सुरू करा",
 
   "hero.eyebrow": "B2B हॉस्पिटॅलिटी संसाधन एक्सचेंज",
   "hero.title": "रिव्होरामध्ये आपले स्वागत आहे",
@@ -1069,6 +1073,8 @@ hi: {
   "nav.provider": "प्रदाता",
   "nav.seeker": "खोजकर्ता",
   "nav.notifications": "सूचनाएँ",
+  "theme.switchToDark": "डार्क मोड चालू करें",
+  "theme.switchToLight": "लाइट मोड चालू करें",
 
   "hero.eyebrow": "B2B हॉस्पिटैलिटी संसाधन एक्सचेंज",
   "hero.title": "रिवोरा में आपका स्वागत है",

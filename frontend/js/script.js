@@ -74,6 +74,7 @@ const I18N = {
     this.current = lang;
     try { localStorage.setItem(this.STORAGE_KEY, lang); } catch (e) { /* storage blocked */ }
     document.documentElement.setAttribute('lang', lang);
+    document.dispatchEvent(new CustomEvent('rivora:languagechange'));
     this.apply();
     if (rerender) rerenderDynamicUI();
   },
@@ -291,12 +292,59 @@ function initAuthUI() {
   });
 }
 
+function initThemeMode() {
+  const root = document.documentElement;
+  const host = document.querySelector('.topbar-actions') || document.querySelector('.navbar-actions') || document.querySelector('.sidebar-nav');
+  if (!host || host.querySelector('.theme-toggle')) return;
+
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'theme-toggle btn-icon';
+  button.innerHTML = '<svg class="theme-icon theme-icon-moon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20.2 15.2A8.4 8.4 0 0 1 8.8 3.8 8.5 8.5 0 1 0 20.2 15.2Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg><svg class="theme-icon theme-icon-sun" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span class="visually-hidden"></span>';
+  host.appendChild(button);
+
+  const getLabel = (mode) => {
+    const dict = (window.RIVORA_TRANSLATIONS || {})[root.lang] || (window.RIVORA_TRANSLATIONS || {}).en || {};
+    return dict[mode === 'dark' ? 'theme.switchToLight' : 'theme.switchToDark'] || (mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode');
+  };
+  const paint = () => {
+    const mode = root.dataset.theme === 'dark' ? 'dark' : 'light';
+    const label = getLabel(mode);
+    button.setAttribute('aria-label', label);
+    button.title = label;
+    button.setAttribute('aria-pressed', String(mode === 'dark'));
+  };
+  const setMode = (mode, save) => {
+    root.dataset.theme = mode;
+    if (save) {
+      try { localStorage.setItem('rivora.theme', mode); } catch (_) {}
+    }
+    paint();
+    document.dispatchEvent(new CustomEvent('rivora:themechange', { detail: { theme: mode } }));
+  };
+
+  button.addEventListener('click', () => setMode(root.dataset.theme === 'dark' ? 'light' : 'dark', true));
+  document.addEventListener('rivora:languagechange', paint);
+  paint();
+
+  if (window.matchMedia) {
+    const preference = window.matchMedia('(prefers-color-scheme: dark)');
+    preference.addEventListener?.('change', event => {
+      let saved = null;
+      try { saved = localStorage.getItem('rivora.theme'); } catch (_) {}
+      if (!saved) setMode(event.matches ? 'dark' : 'light', false);
+    });
+  }
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   // Language must initialise before anything renders dynamic strings.
+  initThemeMode();
   I18N.current = I18N.detect();
   document.documentElement.setAttribute('lang', I18N.current);
   initLanguageSwitcher();
   I18N.apply();
+  document.dispatchEvent(new CustomEvent('rivora:languagechange'));
 
   initAuthUI();
   initPasswordToggles();
