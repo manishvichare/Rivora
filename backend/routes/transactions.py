@@ -4,7 +4,7 @@ from sqlalchemy import func
 
 from database import get_db
 import models, schemas
-from auth import get_current_business
+from auth import get_current_admin, get_current_business
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -555,7 +555,7 @@ def review_refund_request(
     txn_id: int,
     payload: schemas.AdminRefundReview,
     db: Session = Depends(get_db),
-    current: models.Business = Depends(get_current_business),
+    current: models.Business = Depends(get_current_admin),
 ):
     txn = db.query(models.Transaction).filter(models.Transaction.id == txn_id).first()
     if not txn:

@@ -14,10 +14,23 @@ if not DATABASE_URL:
         raise RuntimeError("DATABASE_URL must be set for production deployments.")
     DATABASE_URL = "mysql+pymysql://root:manish@localhost:3306/rivora"
 
-# Render provides PostgreSQL URLs as postgresql://; SQLAlchemy uses the
-# psycopg2 driver installed in backend/requirements.txt.
+DATABASE_URL = DATABASE_URL.strip()
+
+# Render and Supabase PostgreSQL URLs use the psycopg2 driver included in
+# backend/requirements.txt.
 if DATABASE_URL.startswith("postgres://"):
-    DATABASE_URL = "postgresql://" + DATABASE_URL[len("postgres://"):]
+    DATABASE_URL = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+
+if "[YOUR-PASSWORD]" in DATABASE_URL or "<YOUR-PASSWORD>" in DATABASE_URL:
+    raise RuntimeError(
+        "DATABASE_URL still contains the password placeholder. Replace it with "
+        "the database password in the hosting provider environment settings."
+    )
+
+if os.getenv("APP_ENV", "development").lower() == "production" and not DATABASE_URL.startswith(
+    ("postgresql://", "postgresql+psycopg2://")
+):
+    raise RuntimeError("Production DATABASE_URL must point to a PostgreSQL database.")
 
 # --- Auth ---
 JWT_SECRET_KEY = os.getenv("JWT_SECRET_KEY")

@@ -1,5 +1,7 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+from sqlalchemy.exc import SQLAlchemyError
 
 from pathlib import Path
 from fastapi.staticfiles import StaticFiles
@@ -55,7 +57,15 @@ def root():
 @app.get("/health")
 @app.get("/api/health")
 def health():
-    return {"status": "healthy"}
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+    except SQLAlchemyError:
+        raise HTTPException(
+            status_code=503,
+            detail={"status": "unhealthy", "database": "unavailable"},
+        )
+    return {"status": "healthy", "database": "connected"}
 
 
 # Keep this catch-all mount last so API and health routes take precedence.

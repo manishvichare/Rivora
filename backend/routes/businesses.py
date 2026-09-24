@@ -233,27 +233,45 @@ def resend_signup_otp(payload: schemas.SignupResendIn, db: Session = Depends(get
     if channel not in ["email", "mobile", "both"]:
         channel = "both"
 
+    delivered_channels = []
+    failed_channels = []
+
     if channel in ["email", "both"]:
         new_email_otp = f"{random.randint(100000, 999999)}"
         email_delivery = send_verification_email(pending.email, pending.name, new_email_otp, pending.expires_at)
-        if not email_delivery.get("delivered_via_smtp"):
-            db.rollback()
-            raise HTTPException(status_code=503, detail=email_delivery.get("delivery_message", "We could not send the verification email. Please try again later."))
-        pending.email_otp_hash = hashlib.sha256((new_email_otp + pending.session_id + JWT_SECRET_KEY).encode()).hexdigest()
+        if email_delivery.get("delivered_via_smtp"):
+            pending.email_otp_hash = hashlib.sha256((new_email_otp + pending.session_id + JWT_SECRET_KEY).encode()).hexdigest()
+            delivered_channels.append("email")
+        else:
+            failed_channels.append("email")
 
-    if channel == "mobile":
+    if channel in ["mobile", "both"]:
         new_mobile_otp = f"{random.randint(100000, 999999)}"
-        pending.mobile_otp_hash = hashlib.sha256((new_mobile_otp + pending.session_id + JWT_SECRET_KEY).encode()).hexdigest()
-        send_verification_sms(pending.phone, new_mobile_otp, pending.expires_at)
+        sms_delivery = send_verification_sms(pending.phone, new_mobile_otp, pending.expires_at)
+        if sms_delivery.get("delivered_via_gateway"):
+            pending.mobile_otp_hash = hashlib.sha256((new_mobile_otp + pending.session_id + JWT_SECRET_KEY).encode()).hexdigest()
+            delivered_channels.append("mobile")
+        else:
+            failed_channels.append("mobile")
+
+    if not delivered_channels:
+        db.rollback()
+        if "email" in failed_channels:
+            raise HTTPException(status_code=503, detail="We could not send the verification email. Please try again later.")
+        raise HTTPException(status_code=503, detail="We could not send the verification SMS. Please try again later.")
 
     pending.resend_cooldown_until = now + timedelta(seconds=60)
     db.commit()
+    delivered_channel = "both" if len(delivered_channels) == 2 else delivered_channels[0]
+    delivery_message = f"Fresh verification code dispatched to your {delivered_channel}."
+    if failed_channels:
+        delivery_message += f" The {', '.join(failed_channels)} channel could not be reached."
 
     return schemas.SignupResendOut(
         session_id=pending.session_id,
-        channel=channel,
+        channel=delivered_channel,
         resend_cooldown_seconds=60,
-        message=f"Fresh verification code dispatched to your {channel}."
+        message=delivery_message,
     )
 
 
@@ -317,10 +335,6 @@ def login(payload: schemas.BusinessLogin, db: Session = Depends(get_db)):
         is_valid = verify_password(payload.password, business.password_hash)
     except Exception:
         pass
-
-    # Allow developer / admin bypass for verified developer account
-    if not is_valid and email_clean == "vicharemanish717@gmail.com" and payload.password in ["Developer@123", "password123", "manish123", "Manish@123"]:
-        is_valid = True
 
     if not is_valid:
         raise HTTPException(status_code=401, detail="Incorrect email or password")
@@ -419,12 +433,6 @@ def verify_login_otp(payload: schemas.LoginOtpVerify, db: Session = Depends(get_
     if not business:
         raise HTTPException(status_code=404, detail="Business account not found")
 
-    if business.email.lower() == "vicharemanish717@gmail.com":
-        business.verified = True
-        business.is_admin = True
-        business.role = "developer"
-        db.commit()
-
     token = create_access_token(business.id)
     return schemas.TokenOut(access_token=token, business=business)
 
@@ -475,10 +483,6 @@ def resend_login_otp(payload: schemas.LoginResendIn, db: Session = Depends(get_d
 
 @router.get("/me", response_model=schemas.BusinessOut)
 def get_me(current: models.Business = Depends(get_current_business), db: Session = Depends(get_db)):
-    if current.email.lower() == "vicharemanish717@gmail.com":
-        current.verified = True
-        current.is_admin = True
-        current.role = "developer"
     return current
 
 

@@ -48,3 +48,15 @@ def get_current_business(
     if business is None:
         raise credentials_error
     return business
+
+
+def get_current_admin(
+    current: models.Business = Depends(get_current_business),
+) -> models.Business:
+    """Require an authenticated business account with admin rights in the database."""
+    if not current.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator privileges required",
+        )
+    return current

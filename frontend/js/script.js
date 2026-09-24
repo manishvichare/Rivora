@@ -228,8 +228,7 @@ function initAuthUI() {
   const isAdminOrDev = Boolean(
     user.is_admin ||
     user.role === 'developer' ||
-    user.role === 'admin' ||
-    (user.email && user.email.toLowerCase() === 'vicharemanish717@gmail.com')
+    user.role === 'admin'
   );
 
   // Upgrade sidebar role switch to include Admin for Developers/Admins
@@ -3697,7 +3696,7 @@ async function initProfileVerification(user) {
 
   const verifiedBadge = document.querySelector('.profile-verified');
   const role = (user.role || '').toLowerCase();
-  const isDev = role === 'developer' || (user.email && user.email.toLowerCase() === 'vicharemanish717@gmail.com');
+  const isDev = role === 'developer';
   const isAdmin = role === 'admin' || user.is_admin || isDev;
   const isProvider = role === 'provider' || isDev || (!role || role === 'business' || role === 'hotel');
 

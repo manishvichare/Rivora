@@ -7,7 +7,7 @@ from sqlalchemy import func
 
 from database import get_db
 import models, schemas
-from auth import get_current_business
+from auth import get_current_admin, get_current_business
 
 router = APIRouter(prefix="/verification", tags=["verification"])
 
@@ -493,7 +493,7 @@ def submit_provider_document(
 @router.get("/admin/stats")
 def admin_verification_stats(
     db: Session = Depends(get_db),
-    current: models.Business = Depends(get_current_business),
+    current: models.Business = Depends(get_current_admin),
 ):
     total_docs = db.query(models.ProviderDocument).count()
     pending_docs = db.query(models.ProviderDocument).filter(models.ProviderDocument.status.in_(["submitted", "under_review"])).count()
@@ -517,7 +517,7 @@ def admin_verification_stats(
 @router.get("/admin/documents", response_model=list[schemas.ProviderDocOut])
 def admin_list_provider_documents(
     db: Session = Depends(get_db),
-    current: models.Business = Depends(get_current_business),
+    current: models.Business = Depends(get_current_admin),
 ):
     docs = db.query(models.ProviderDocument).order_by(models.ProviderDocument.created_at.desc()).all()
     results = []
@@ -533,7 +533,7 @@ def admin_review_provider_document(
     doc_id: int,
     payload: schemas.AdminDocReview,
     db: Session = Depends(get_db),
-    current: models.Business = Depends(get_current_business),
+    current: models.Business = Depends(get_current_admin),
 ):
     doc = db.query(models.ProviderDocument).filter(models.ProviderDocument.id == doc_id).first()
     if not doc:
@@ -581,7 +581,7 @@ def admin_review_provider_document(
 @router.get("/admin/duplicate-flags", response_model=list[schemas.DuplicateFlagOut])
 def admin_list_duplicate_flags(
     db: Session = Depends(get_db),
-    current: models.Business = Depends(get_current_business),
+    current: models.Business = Depends(get_current_admin),
 ):
     flags = db.query(models.DuplicateAccountFlag).order_by(models.DuplicateAccountFlag.created_at.desc()).all()
     results = []
@@ -596,7 +596,7 @@ def admin_list_duplicate_flags(
 @router.get("/admin/security-logs", response_model=list[schemas.SecurityLogOut])
 def admin_list_security_logs(
     db: Session = Depends(get_db),
-    current: models.Business = Depends(get_current_business),
+    current: models.Business = Depends(get_current_admin),
 ):
     logs = db.query(models.SecurityLog).order_by(models.SecurityLog.created_at.desc()).limit(100).all()
     return logs

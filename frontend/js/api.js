@@ -25,13 +25,7 @@ const RivoraAPI = {
         u = localStorage.getItem("rivora_user");
       }
       if (!u) return null;
-      const user = JSON.parse(u);
-      if (user && user.email && user.email.toLowerCase() === 'vicharemanish717@gmail.com') {
-        user.is_admin = true;
-        user.role = 'developer';
-        user.verified = true;
-      }
-      return user;
+      return JSON.parse(u);
     } catch (e) {
       return null;
     }
@@ -43,11 +37,6 @@ const RivoraAPI = {
 
   setAuth(token, user) {
     try {
-      if (user && user.email && user.email.toLowerCase() === 'vicharemanish717@gmail.com') {
-        user.is_admin = true;
-        user.role = 'developer';
-        user.verified = true;
-      }
       if (token) {
         sessionStorage.setItem("rivora_token", token);
         localStorage.setItem("rivora_token", token);
