@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create an Account · Rivora</title>
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <a class="brand" href="index.html"><span class="brand-mark"></span><span>RIVORA<span class="brand-tagline" data-i18n="brand.tagline">HOSPITALITY EXCHANGE</span></span></a>
+  <div class="navbar-actions">
+    <div data-lang-switcher></div>
+    <a class="btn btn-ghost" href="login.html" data-i18n="auth.haveAccount">Already have an account? Log in</a>
+  </div>
+</header>
+
+<main class="auth-shell">
+
+  <div class="auth-side">
+    <div class="auth-side-content">
+      <h2 data-i18n="auth.sideTitle">List spare capacity. Find what you need. One account, both sides.</h2>
+      <p data-i18n="auth.sideText">Join hotels, restaurants, caterers and venues already trading idle rooms, halls, kitchens, vehicles and equipment.</p>
+    </div>
+    <div class="auth-side-cards">
+      <div class="auth-mini-card"><div class="amc-top"><span data-i18n="offers.providerUpper">PROVIDER</span><span data-i18n="offers.idleToday">Idle today</span></div><div class="amc-name" data-i18n="sample.grandHorizon120">Grand Horizon Hotel — 120 rooms</div></div>
+      <div class="auth-mini-card"><div class="amc-top"><span data-i18n="offers.matchScoreUpper">MATCH SCORE</span><span>96%</span></div><div class="amc-name" data-i18n="sample.corporateRoyalMatch">Corporate Events ↔ Royal Banquet Hall</div></div>
+      <div class="auth-mini-card"><div class="amc-top"><span data-i18n="offers.seekerUpper">SEEKER</span><span data-i18n="offers.confirmedUpper">Confirmed</span></div><div class="amc-name" data-i18n="sample.satEveningPrice">Sat, 2–10pm · ₹25,000</div></div>
+    </div>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="auth-form-wrap">
+      
+      <!-- Stepper Header -->
+      <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600;">
+          <span id="step1-indicator" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--gold); color: #183B43; font-size: 0.75rem;">1</span>
+          <span id="step1-text" style="color: var(--ink);">Business Details</span>
+        </div>
+        <span style="color: var(--ink-faint);">➔</span>
+        <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600;">
+          <span id="step2-indicator" style="display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; background: var(--border); color: var(--ink-faint); font-size: 0.75rem;">2</span>
+          <span id="step2-text" style="color: var(--ink-faint);">OTP Verification</span>
+        </div>
+      </div>
+
+      <!-- STEP 1: Business Form -->
+      <div id="signup-step-1">
+        <h1 data-i18n="auth.signupTitle">Create your business account</h1>
+        <p class="auth-lede" data-i18n="auth.signupLede">Set up once — list resources, search for them, or both.</p>
+
+        <div class="role-toggle" id="role-toggle" role="tablist">
+          <button type="button" class="role-toggle-btn" data-role="provider" data-i18n="auth.roleProvider">Have space</button>
+          <button type="button" class="role-toggle-btn" data-role="seeker" data-i18n="auth.roleSeeker">Need resources</button>
+          <button type="button" class="role-toggle-btn is-active" data-role="both" data-i18n="auth.roleBoth">Both</button>
+        </div>
+
+        <form id="signup-form">
+          <div class="field-row">
+            <div class="field"><label for="s-name" data-i18n="auth.businessName">Business name</label><input id="s-name" type="text" data-i18n-placeholder="auth.businessNamePlaceholder" placeholder="e.g. Riverside Banquets" required></div>
+            <div class="field">
+              <label for="s-type" data-i18n="auth.businessType">Business type</label>
+              <select id="s-type" required>
+                <option value="" data-i18n="resource.selectType">Select type</option>
+                <option data-i18n="auth.typeHotel">Hotel</option><option data-i18n="auth.typeRestaurant">Restaurant</option><option data-i18n="auth.typeCaterer">Caterer</option>
+                <option data-i18n="auth.typeVenue">Banquet Venue</option><option data-i18n="auth.typeResort">Resort</option><option data-i18n="auth.typeOther">Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field-row">
+            <div class="field"><label for="s-email" data-i18n="auth.email">Work email</label><input id="s-email" type="email" placeholder="you@business.com" required></div>
+            <div class="field"><label for="s-phone" data-i18n="auth.phone">Phone</label><input id="s-phone" type="tel" placeholder="+91 98765 43210" required></div>
+          </div>
+
+          <div class="field"><label for="s-location" data-i18n="auth.location">Location</label><input id="s-location" type="text" data-i18n-placeholder="auth.locationPlaceholder" placeholder="Area / neighbourhood, city" required></div>
+
+          <div class="field-row">
+            <div class="field"><label for="s-password" data-i18n="auth.password">Password</label>
+              <div class="password-field">
+                <input id="s-password" type="password" data-i18n-placeholder="auth.passwordPlaceholder" placeholder="At least 8 characters" required minlength="8">
+                <button type="button" class="password-toggle" data-target="s-password" data-i18n="auth.show">Show</button>
+              </div>
+            </div>
+            <div class="field"><label for="s-confirm" data-i18n="auth.confirmPassword">Confirm password</label>
+              <div class="password-field">
+                <input id="s-confirm" type="password" data-i18n-placeholder="auth.confirmPlaceholder" placeholder="Repeat password" required minlength="8">
+                <button type="button" class="password-toggle" data-target="s-confirm" data-i18n="auth.show">Show</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="field"><label for="s-license" data-i18n="auth.license">License / GST number (optional)</label><input id="s-license" type="text" data-i18n-placeholder="auth.licensePlaceholder" placeholder="Speeds up verification"></div>
+
+          <label class="checkbox-field">
+            <input type="checkbox" id="s-terms" required>
+            <span data-i18n="auth.terms">I agree to the terms of the exchange and confirm this business's details are accurate.</span>
+          </label>
+
+          <div id="recaptcha-container"></div>
+          <button type="submit" class="btn btn-primary btn-block" style="margin-top: 1.2rem;" id="btn-submit-step1">Continue to Email Verification →</button>
+          <p class="form-error" id="signup-error" hidden data-i18n="auth.errorPassword">Check that both passwords match and all required fields are filled.</p>
+        </form>
+      </div>
+
+      <!-- STEP 2: Email Verification -->
+      <div id="signup-step-2" hidden>
+        <div style="text-align: left; margin-bottom: 1.5rem;">
+          <h2 style="font-size: 1.5rem; font-family: var(--font-head); margin-bottom: 0.4rem;">Verify Your Email</h2>
+          <p style="color: var(--ink-soft); font-size: 0.92rem; line-height: 1.5;">
+            We have dispatched a 6-digit verification code to your registered work email. Enter the code below to activate your account.
+          </p>
+        </div>
+
+        <form id="otp-verify-form">
+          <!-- Work Email OTP Card -->
+          <div id="v-email-card" style="background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px; padding: 1.4rem; margin-bottom: 1.2rem; box-shadow: 0 4px 14px rgba(24, 59, 67,0.03);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+              <div style="display: flex; align-items: center; gap: 0.6rem;">
+                <span style="font-size: 0.75rem; font-weight: 700; background: var(--teal-soft); color: var(--teal); padding: 3px 8px; border-radius: 6px;">EMAIL</span>
+                <div>
+                  <strong style="font-size: 0.95rem; display: block;">Work Email Verification Code</strong>
+                  <span id="v-email-display" style="font-size: 0.85rem; color: var(--ink-soft); font-family: monospace; font-weight: 600;">••••@••••</span>
+                </div>
+              </div>
+              <span class="badge badge-amber" id="v-email-timer" style="font-size: 0.75rem;">Valid: 10:00</span>
+            </div>
+
+            <div class="field" style="margin-bottom: 0.8rem;">
+              <label for="v-email-otp" style="font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 6px; display: block;">Enter 6-digit code sent to your email:</label>
+              <input id="v-email-otp" type="text" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="• • • • • •" required style="font-size: 1.6rem; letter-spacing: 10px; text-align: center; font-family: monospace; font-weight: 800; height: 52px; border-radius: 8px;">
+            </div>
+
+            <div style="display: flex; justify-content: flex-end;">
+              <button type="button" class="btn btn-sm btn-ghost" id="btn-resend-email" style="font-size: 0.8rem; padding: 0.3rem 0.6rem;">Resend Email OTP</button>
+            </div>
+          </div>
+
+          <!-- Hidden mobile references to prevent script errors -->
+          <div id="v-mobile-card" style="display: none;">
+            <span id="v-phone-display"></span>
+            <span id="v-phone-timer"></span>
+            <input id="v-mobile-otp" type="text" value="">
+            <button type="button" id="btn-resend-mobile"></button>
+          </div>
+
+          <!-- Trust Callout -->
+          <div style="background: rgba(61, 128, 103, 0.08); border: 1px solid rgba(61, 128, 103, 0.25); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1.4rem; font-size: 0.82rem; color: var(--ink-soft); display: flex; align-items: center; gap: 0.6rem;">
+            <span aria-hidden="true">✓</span>
+            <span>Secured email verification. A single-use verification code was sent directly to your registered work email.</span>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-verify-all" style="height: 48px; font-size: 0.98rem; font-weight: 600;">Verify Email & Create Account →</button>
+          
+          <button type="button" class="btn btn-ghost btn-block" id="btn-edit-details" style="margin-top: 0.6rem; font-size: 0.85rem;">← Edit Business Details</button>
+
+          <p class="form-error" id="verify-error" hidden style="margin-top: 1rem; text-align: center;"></p>
+          <p id="verify-success" hidden style="color: var(--emerald); background: var(--emerald-soft); padding: 0.8rem 1rem; border-radius: 8px; margin-top: 1rem; font-size: 0.9rem; font-weight: 600; text-align: center;"></p>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<!-- Firebase App & Auth Compat SDKs -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="js/firebase-init.js"></script>
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>

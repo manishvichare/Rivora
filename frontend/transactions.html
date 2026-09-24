@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transactions &amp; Escrow Payments · Rivora</title>
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .escrow-pill { display:inline-flex; align-items:center; gap:0.35rem; padding:0.25rem 0.65rem; border-radius:999px; font-size:0.75rem; font-weight:700; }
+  .escrow-pill--held { background:#F2E8D1; color:#9B7440; border:1px solid #E7D8A6; }
+  .escrow-pill--released { background:#E8F2E8; color:#285B4B; border:1px solid #BED8C5; }
+  .escrow-pill--refunded { background:#E9F0F1; color:#4F7180; border:1px solid #C9D8D6; }
+  .escrow-pill--disputed { background:#F5EAE3; color:#A75650; border:1px solid #E8C4B7; }
+  .txn-table { width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem; }
+  .txn-table th { background:#EEF2EA; padding:0.75rem 1rem; border-bottom:2px solid #DDE6DE; color:#526F70; font-weight:700; }
+  .txn-table td { padding:0.85rem 1rem; border-bottom:1px solid #EFF1E8; vertical-align:middle; }
+  .txn-table tr:hover { background:#EEF2EA; }
+  .btn-txn-action { padding:0.35rem 0.75rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer; border:1px solid #C9D8D1; background:#F8F6EF; color:#34565B; transition:all 0.15s; }
+  .btn-txn-action:hover { background:#EFF1E8; }
+  .btn-txn-pay { background:#3D8067; color:#F8F6EF; border-color:#3D8067; }
+  .btn-txn-pay:hover { background:#3C765F; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="index.html"><span class="brand-mark"></span>RIVORA</a>
+    <div class="sidebar-role-switch">
+      <a href="provider.html">Provider</a>
+      <a href="seeker.html">Seeker</a>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-link" href="seeker.html">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Search</span>
+      </a>
+      <a class="sidebar-link" href="requests.html">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 12l2.5-7A2 2 0 0 1 7.4 3.5h9.2a2 2 0 0 1 1.9 1.5L21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 12h5l1.5 2.5h5L16 12h5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span>Requests</span>
+      </a>
+      <a class="sidebar-link is-active" href="transactions.html">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M2 10h20" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Transactions &amp; Escrow</span>
+      </a>
+      <a class="sidebar-link" href="profile.html">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.5-4 5-6 7.5-6s6 2 7.5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Profile</span>
+      </a>
+    </nav>
+    <div class="sidebar-account">
+      <span class="sidebar-avatar" id="sidebar-avatar-initials">RV</span>
+      <div><div class="sidebar-account-name" id="sidebar-user-name">Rivora Account</div><div class="sidebar-account-sub" id="sidebar-user-role">Member</div></div>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>Transactions &amp; Escrow Protection</h1>
+        <p>Real-time payment settlements, escrow holding records, GST tax invoices, and payout releases.</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" id="btn-refresh-txns" type="button">Refresh transactions</button>
+      </div>
+    </header>
+
+    <main class="app-content" id="main-content">
+
+      <!-- Escrow Value Pillars Banner -->
+      <section style="background:linear-gradient(135deg, #EDF4E9 0%, #E8F2E8 100%); border:1px solid #BED8C5; border-radius:12px; padding:1rem 1.25rem; margin-bottom:1.5rem; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+        <div style="display:flex; align-items:center; gap:0.75rem;">
+          <span class="badge badge-teal">Protected</span>
+          <div>
+            <strong style="color:#285B4B; font-size:0.95rem;">Rivora Escrow Protection Guaranteed</strong>
+            <p style="margin:0.2rem 0 0 0; font-size:0.8rem; color:#3C765F;">
+              Seeker funds remain safeguarded in third-party escrow. Disbursal occurs strictly upon verified service execution to authenticated bank accounts.
+            </p>
+          </div>
+        </div>
+        <div style="font-size:0.78rem; font-weight:700; color:#285B4B; display:flex; gap:0.85rem; flex-wrap:wrap;">
+          <span>UPI &amp; cards</span>
+          <span>25% advance option</span>
+          <span>Automated payouts</span>
+          <span>Tax compliant</span>
+        </div>
+      </section>
+
+      <!-- KPI Summary -->
+      <section class="kpi-grid" style="margin-bottom: 1.5rem;">
+        <div class="kpi-card kpi-accent">
+          <div class="kpi-top"><div class="kpi-icon" style="background:#E9F0F1; color:#4F718E;">₹</div></div>
+          <div class="kpi-value" id="kpi-total-volume">₹0</div>
+          <div class="kpi-label">Total Booking Volume</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><div class="kpi-icon" style="background:#F2E8D1; color:#9A7140;">₹</div></div>
+          <div class="kpi-value" id="kpi-escrow-held" style="color:#9A7140;">₹0</div>
+          <div class="kpi-label">Secured in Escrow</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><div class="kpi-icon" style="background:#E8F2E8; color:#3D8067;">✓</div></div>
+          <div class="kpi-value" id="kpi-escrow-released" style="color:#3D8067;">₹0</div>
+          <div class="kpi-label">Released Payouts</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><div class="kpi-icon" style="background:#EFF1E8; color:#526F70;">TX</div></div>
+          <div class="kpi-value" id="kpi-txn-count">0</div>
+          <div class="kpi-label">Completed Transactions</div>
+        </div>
+      </section>
+
+      <!-- Transactions Table Panel -->
+      <section class="panel" style="padding:0; overflow:hidden;">
+        <div style="padding:1rem 1.25rem; border-bottom:1px solid #DDE6DE; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <label style="font-size:0.8rem; font-weight:700; color:#526F70;">Filter Status:</label>
+            <select id="filter-txn-status" style="padding:0.35rem 0.75rem; border:1px solid #C9D8D1; border-radius:6px; font-size:0.8rem;">
+              <option value="all">All Transactions</option>
+              <option value="held">Held in Escrow</option>
+              <option value="released">Released Payouts</option>
+              <option value="refunded">Refunded</option>
+            </select>
+          </div>
+          <input type="text" id="search-txn" placeholder="Search by Transaction ID or Resource..." style="padding:0.35rem 0.75rem; border:1px solid #C9D8D1; border-radius:6px; font-size:0.8rem; min-width:220px;">
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table class="txn-table">
+            <thead>
+              <tr>
+                <th>Code</th>
+                <th>Resource / Partner</th>
+                <th>Agreed Amount</th>
+                <th>Escrow Status</th>
+                <th>Payment State</th>
+                <th>Date</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="txn-tbody">
+              <tr>
+                <td colspan="7" style="text-align:center; padding:2rem; color:#6C8582;">Loading transaction records…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script src="js/script.js"></script>
+<script>
+let transactionsList = [];
+
+async function loadTransactions() {
+  const tbody = document.getElementById('txn-tbody');
+  try {
+    const user = await RivoraAPI.getMe().catch(() => null);
+    if (user) {
+      document.getElementById('sidebar-user-name').textContent = user.name || 'User';
+      document.getElementById('sidebar-user-role').textContent = user.business_type ? user.business_type.toUpperCase() : 'MEMBER';
+      document.getElementById('sidebar-avatar-initials').textContent = (user.name || 'RV').slice(0, 2).toUpperCase();
+    }
+
+    const txns = await RivoraAPI.getMyTransactions();
+    transactionsList = txns || [];
+
+    // Calculate KPI totals
+    let totalVol = 0;
+    let heldVol = 0;
+    let releasedVol = 0;
+
+    transactionsList.forEach(t => {
+      const amt = parseFloat(t.amount) || 0;
+      totalVol += amt;
+      if (t.escrow_status === 'held') heldVol += amt;
+      if (t.escrow_status === 'released') releasedVol += amt;
+    });
+
+    document.getElementById('kpi-total-volume').textContent = `₹${totalVol.toLocaleString('en-IN')}`;
+    document.getElementById('kpi-escrow-held').textContent = `₹${heldVol.toLocaleString('en-IN')}`;
+    document.getElementById('kpi-escrow-released').textContent = `₹${releasedVol.toLocaleString('en-IN')}`;
+    document.getElementById('kpi-txn-count').textContent = transactionsList.length;
+
+    renderTxnTable();
+  } catch (err) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#B95F58;">Error loading transactions: ${escapeHtml(err.message)}</td></tr>`;
+  }
+}
+
+function renderTxnTable() {
+  const tbody = document.getElementById('txn-tbody');
+  const statusFilter = document.getElementById('filter-txn-status').value;
+  const searchFilter = (document.getElementById('search-txn').value || '').trim().toLowerCase();
+
+  const filtered = transactionsList.filter(t => {
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'held' && t.escrow_status !== 'held') return false;
+      if (statusFilter === 'released' && t.escrow_status !== 'released') return false;
+      if (statusFilter === 'refunded' && t.escrow_status !== 'refunded') return false;
+    }
+    if (searchFilter) {
+      const code = (t.transaction_code || '').toLowerCase();
+      const rName = (t.resource_name || '').toLowerCase();
+      const counterpart = (t.provider_name || t.seeker_name || '').toLowerCase();
+      if (!code.includes(searchFilter) && !rName.includes(searchFilter) && !counterpart.includes(searchFilter)) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#6C8582;">No transactions match the selected criteria.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(t => {
+    const isHeld = t.escrow_status === 'held';
+    const isReleased = t.escrow_status === 'released';
+    const isRefunded = t.escrow_status === 'refunded';
+    const escrowCls = isHeld ? 'escrow-pill--held' : (isReleased ? 'escrow-pill--released' : (isRefunded ? 'escrow-pill--refunded' : 'escrow-pill--disputed'));
+    const escrowLabel = isHeld ? 'Held in Escrow' : (isReleased ? 'Released to Bank' : (isRefunded ? 'Refunded' : 'Pending'));
+    const dateStr = t.created_at ? new Date(t.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', year: 'numeric' }) : 'Recent';
+
+    return `
+      <tr data-txn-id="${t.id}">
+        <td><strong style="color:#183B43;">${escapeHtml(t.transaction_code)}</strong></td>
+        <td>
+          <div style="font-weight:600;">${escapeHtml(t.resource_name || 'Resource Booking')}</div>
+          <div style="font-size:0.75rem; color:#6C8582;">${escapeHtml(t.provider_name || t.seeker_name || 'Partner')}</div>
+        </td>
+        <td><strong style="font-size:0.95rem; color:#183B43;">₹${parseFloat(t.amount || 0).toLocaleString('en-IN')}</strong></td>
+        <td><span class="escrow-pill ${escrowCls}">${escrowLabel}</span></td>
+        <td>
+          <span style="font-size:0.8rem; font-weight:600; color:${t.payment_status === 'secured' ? '#3D8067' : '#6C8582'};">
+            ${t.payment_status === 'secured' ? '● Secured' : '○ Pending'}
+          </span>
+        </td>
+        <td style="color:#6C8582; font-size:0.8rem;">${dateStr}</td>
+        <td style="text-align:right; white-space:nowrap;">
+          <button type="button" class="btn-txn-action" onclick="viewInvoiceModal(${t.id})">Tax Invoice</button>
+          ${isHeld ? `<button type="button" class="btn-txn-action btn-txn-pay" onclick="promptReleasePayout(${t.id})">Release Payout</button>` : ''}
+          ${isHeld ? `<button type="button" class="btn-txn-action" style="color:#B95F58;" onclick="promptRefund(${t.id})">Refund</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+window.viewInvoiceModal = async function(txnId) {
+  try {
+    const inv = await RivoraAPI.getInvoice(txnId);
+    if (typeof openInvoiceModal === 'function') {
+      openInvoiceModal(inv, txnId);
+    } else {
+      alert(`Invoice #${inv.invoice_number}\nAmount: ₹${inv.total_amount}\nBase: ₹${inv.base_amount}\nGST (18%): ₹${inv.tax_gst}\nPayment: ${inv.payment_method}`);
+    }
+  } catch (err) {
+    alert(err.message || 'Could not load invoice');
+  }
+};
+
+window.promptReleasePayout = async function(txnId) {
+  if (!confirm('Confirm release of escrow funds to provider verified bank account? This finalizes service completion.')) return;
+  try {
+    await RivoraAPI.request(`/transactions/${txnId}/escrow/release`, { method: 'POST' });
+    alert('✓ Escrow funds successfully disbursed to provider verified bank account!');
+    loadTransactions();
+  } catch (err) {
+    alert(err.message || 'Escrow release failed');
+  }
+};
+
+window.promptRefund = async function(txnId) {
+  const reason = prompt('Please enter the reason for the refund request:');
+  if (!reason) return;
+  try {
+    await RivoraAPI.requestRefund(txnId, { reason: reason });
+    alert('✓ Refund request registered. Held in escrow dispute for verification.');
+    loadTransactions();
+  } catch (err) {
+    alert(err.message || 'Refund request failed');
+  }
+};
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('btn-refresh-txns').addEventListener('click', loadTransactions);
+  document.getElementById('filter-txn-status').addEventListener('change', renderTxnTable);
+  document.getElementById('search-txn').addEventListener('input', renderTxnTable);
+  loadTransactions();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Find a Resource · Rivora</title>
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="stylesheet" href="css/leaflet.css">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content" data-i18n="nav.home">Skip to content</a>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="index.html"><span class="brand-mark"></span>RIVORA</a>
+
+    <div class="sidebar-role-switch">
+      <a href="provider.html" data-i18n="nav.provider">Provider</a>
+      <a href="seeker.html" class="is-active" data-i18n="nav.seeker">Seeker</a>
+    </div>
+
+    <nav class="sidebar-nav">
+      <a class="sidebar-link is-active" href="seeker.html">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span data-i18n="nav.search">Search</span>
+      </a>
+      <a class="sidebar-link" href="requests.html">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M3 12l2.5-7A2 2 0 0 1 7.4 3.5h9.2a2 2 0 0 1 1.9 1.5L21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 12h5l1.5 2.5h5L16 12h5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        <span data-i18n="nav.requests">Requests</span>
+      </a>
+      <a class="sidebar-link" href="analytics.html">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span data-i18n="nav.analytics">Analytics</span>
+      </a>
+      <a class="sidebar-link" href="profile.html">
+        <svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.5-4 5-6 7.5-6s6 2 7.5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span data-i18n="nav.profile">Profile</span>
+      </a>
+    </nav>
+
+    <div class="sidebar-account">
+      <span class="sidebar-avatar">RC</span>
+      <div><div class="sidebar-account-name">Riverside Caterers</div><div class="sidebar-account-sub" data-i18n="nav.seeker">Seeker</div></div>
+      <a class="sidebar-logout" href="index.html" data-i18n-title="nav.logout" title="Log out">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <div class="topbar-title"><h1 data-i18n="seeker.title">Find a resource</h1><p data-i18n="seeker.lede">Search what's available nearby, or post what you need.</p></div>
+      <div class="topbar-actions">
+        <div data-lang-switcher></div>
+        <div class="notif-wrap" id="notif-wrap">
+          <button class="btn-icon" id="notif-trigger" type="button" aria-haspopup="true" aria-expanded="false" data-i18n-aria="nav.notifications" aria-label="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 0 1-3.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span class="notif-dot" id="notif-dot" hidden></span>
+          </button>
+          <div class="notif-panel" id="notif-panel" hidden></div>
+        </div>
+        <span class="sidebar-avatar">RC</span>
+      </div>
+    </header>
+
+    <main class="app-content" id="main-content">
+
+      <!-- ZEUS — AI marketplace assistant (natural-language requirement entry) -->
+      <section class="zeus-panel" id="zeus-panel">
+        <div class="zeus-head">
+          <span class="zeus-avatar" aria-hidden="true">✦</span>
+          <div>
+            <h2 data-i18n="zeus.title">Zeus — AI Marketplace Assistant</h2>
+            <span class="zeus-full" data-i18n="zeus.full">ZERO-FRICTION EXCHANGE &amp; UNIFIED SEARCH</span>
+          </div>
+        </div>
+        <p class="zeus-intro" data-i18n="zeus.intro">Tell Zeus what your business needs, in plain language.</p>
+
+        <div class="zeus-input-row">
+          <label class="visually-hidden" for="zeus-input" data-i18n="zeus.intro">Tell Zeus what your business needs</label>
+          <textarea id="zeus-input" rows="2"
+            data-i18n-placeholder="zeus.placeholder"
+            placeholder="e.g. I need a banquet hall for 150 people in Navi Mumbai this Saturday under ₹30,000"></textarea>
+          <button class="btn btn-primary" id="zeus-ask" type="button" data-i18n="zeus.findResources">Find resources</button>
+        </div>
+
+        <div class="zeus-examples">
+          <span class="zeus-examples-label" data-i18n="zeus.examplesTitle">Try asking:</span>
+          <button class="zeus-example" type="button" data-i18n="zeus.example1">I need 100 chairs tomorrow</button>
+          <button class="zeus-example" type="button" data-i18n="zeus.example2">Banquet hall for 200 people near Navi Mumbai</button>
+          <button class="zeus-example" type="button" data-i18n="zeus.example3">Parking for 50 cars this weekend</button>
+        </div>
+
+        <div id="zeus-output" aria-live="polite"></div>
+      </section>
+
+      <section class="panel panel--search">
+        <div class="search-tabs" role="tablist">
+          <button class="search-tab is-active" data-tab="search" role="tab" aria-selected="true" data-i18n="seeker.searchTab">Search resources</button>
+          <button class="search-tab" data-tab="post" role="tab" aria-selected="false" data-i18n="seeker.postTab">Post a requirement instead</button>
+        </div>
+
+        <div class="search-panel-body" data-panel="search">
+          <div class="filter-row">
+            <div class="field"><label for="f-type" data-i18n="resource.type">Resource type</label>
+              <select id="f-type"><option value="" data-i18n="resource.anyType">Any type</option><option value="Space" data-i18n="resource.typeSpace">Space</option><option value="Vehicle" data-i18n="resource.typeVehicle">Vehicle</option><option value="Kitchen" data-i18n="resource.typeKitchen">Kitchen</option><option value="Furniture" data-i18n="resource.typeFurniture">Furniture</option><option value="AV Equipment" data-i18n="resource.typeAV">AV Equipment</option><option value="Staff" data-i18n="resource.typeStaff">Staff</option></select>
+            </div>
+            <div class="field"><label for="f-location" data-i18n="seeker.location">Location</label><input id="f-location" type="text" data-i18n-placeholder="seeker.locationPlaceholder" placeholder="e.g. Andheri"></div>
+            <div class="field"><label for="f-date" data-i18n="seeker.dateNeeded">Date needed</label><input id="f-date" type="date"></div>
+            <div class="field"><label for="f-budget" data-i18n="seeker.maxBudget">Max budget (₹)</label><input id="f-budget" type="number" min="0" placeholder="10000"></div>
+            <div class="field">
+              <label for="f-urgency" data-i18n="seeker.urgency">Urgency</label>
+              <select id="f-urgency">
+                <option value="normal" data-i18n="seeker.urgencyNormal">Normal</option>
+                <option value="today" data-i18n="seeker.urgencyToday">Today</option>
+                <option value="h24" data-i18n="seeker.urgency24">Within 24 hours</option>
+                <option value="urgent" data-i18n="seeker.urgencyUrgent">Urgent</option>
+              </select>
+            </div>
+            <button class="btn btn-primary filter-submit" id="search-btn" type="button" data-i18n="button.search">Search</button>
+          </div>
+        </div>
+
+        <div class="search-panel-body" data-panel="post" hidden>
+          <div class="filter-row">
+            <div class="field"><label for="p-type" data-i18n="resource.type">Resource type</label>
+              <select id="p-type"><option value="" data-i18n="resource.selectType">Select type</option><option value="Space" data-i18n="resource.typeSpace">Space</option><option value="Vehicle" data-i18n="resource.typeVehicle">Vehicle</option><option value="Kitchen" data-i18n="resource.typeKitchen">Kitchen</option><option value="Furniture" data-i18n="resource.typeFurniture">Furniture</option><option value="AV Equipment" data-i18n="resource.typeAV">AV Equipment</option><option value="Staff" data-i18n="resource.typeStaff">Staff</option></select>
+            </div>
+            <div class="field"><label for="p-capacity" data-i18n="seeker.requiredCapacity">Required capacity</label><input id="p-capacity" type="number" min="1" placeholder="150"></div>
+            <div class="field"><label for="p-budget" data-i18n="seeker.budget">Budget (₹)</label><input id="p-budget" type="number" min="0" placeholder="10000"></div>
+            <div class="field"><label for="p-from" data-i18n="seeker.neededFrom">Needed from</label><input id="p-from" type="datetime-local"></div>
+            <div class="field"><label for="p-to" data-i18n="seeker.neededTo">Needed to</label><input id="p-to" type="datetime-local"></div>
+          </div>
+          <button class="btn btn-primary" id="post-requirement-btn" type="button" data-i18n="button.postRequirement">Post requirement</button>
+          <span class="form-confirm" id="post-confirm" hidden data-i18n="seeker.posted">Posted — matching providers now.</span>
+        </div>
+      </section>
+
+      <section class="panel panel--map">
+        <div class="panel-head">
+          <h2 class="panel-title" data-i18n="map.title">Map view</h2>
+          <div class="map-controls">
+            <label class="map-radius-label">
+              <span data-i18n="map.radius">Search radius</span>:
+              <span id="map-radius-value">10 km</span>
+            </label>
+            <input type="range" id="map-radius" min="1" max="15" value="10" step="1">
+            <button class="btn btn-outline btn-sm" id="map-locate-btn" type="button"><span data-i18n="map.locate">Use my location</span></button>
+          </div>
+        </div>
+        <div id="resource-map" role="img" aria-label="Map of resource locations"></div>
+        <div class="map-legend">
+          <span><i class="map-legend-dot map-legend-dot--available"></i><span data-i18n="map.legendAvailable">Available</span></span>
+          <span><i class="map-legend-dot map-legend-dot--unavailable"></i><span data-i18n="map.legendUnavailable">Unavailable</span></span>
+          <span><i class="map-legend-dot map-legend-dot--you"></i><span data-i18n="map.legendYou">You</span></span>
+          <span class="map-attribution" data-i18n="map.attribution">Map data from OpenStreetMap contributors.</span>
+        </div>
+        <p class="map-note" id="map-note" hidden></p>
+      </section>
+
+      <div class="seeker-layout">
+        <div>
+          <div class="results-head">
+            <h2 class="panel-title" id="results-count">Loading resources…</h2>
+            <span class="results-sort" data-i18n="seeker.sortedBy">Sorted by match score</span>
+          </div>
+
+          <section class="results-grid" id="results-grid"></section>
+
+          <div class="compare-bar" id="compare-bar" hidden>
+            <span id="compare-count">0 selected</span>
+            <div class="compare-bar-actions">
+              <button class="btn-mini" id="compare-clear" data-i18n="button.clear">Clear</button>
+              <button class="btn btn-primary btn-sm" id="compare-view" data-i18n="button.compareSide">Compare side by side</button>
+            </div>
+          </div>
+
+          <section class="panel" id="compare-panel" hidden>
+            <div class="panel-head"><h2 class="panel-title" data-i18n="seeker.comparing">Comparing resources</h2></div>
+            <div class="compare-table-wrap"><table class="compare-table" id="compare-table"></table></div>
+          </section>
+        </div>
+
+        <aside class="seeker-side">
+          <div class="panel">
+            <div class="panel-head"><h2 class="panel-title" style="font-size:0.95rem;" data-i18n="seeker.recentSearches">Recent searches</h2></div>
+            <div class="recent-search-pills" id="recent-searches">
+              <span class="recent-search-pill" data-i18n="recent.search1">Banquet hall, Andheri</span>
+              <span class="recent-search-pill" data-i18n="recent.search2">Kitchen under ₹3,000</span>
+            </div>
+          </div>
+        </aside>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<script src="js/leaflet.js"></script>
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>

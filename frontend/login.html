@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In · Rivora</title>
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<header class="navbar">
+  <a class="brand" href="index.html"><span class="brand-mark"></span><span>RIVORA<span class="brand-tagline" data-i18n="brand.tagline">HOSPITALITY EXCHANGE</span></span></a>
+  <div class="navbar-actions">
+    <div data-lang-switcher></div>
+    <a class="btn btn-ghost" href="signup.html" data-i18n="auth.noAccount">New here? Create an account</a>
+  </div>
+</header>
+
+<main class="auth-shell">
+
+  <div class="auth-side">
+    <div class="auth-side-content">
+      <h2 data-i18n="auth.loginSideTitle">Pick up right where you left off.</h2>
+      <p data-i18n="auth.loginSideText">Your listings, requests and matches are all waiting in one dashboard.</p>
+    </div>
+    <div class="auth-side-cards">
+      <div class="auth-mini-card"><div class="amc-top"><span data-i18n="offers.pendingUpper">PENDING</span><span data-i18n="offers.twoRequests">2 requests</span></div><div class="amc-name" data-i18n="sample.riversidePending">Riverside Caterers wants Banquet Hall A</div></div>
+      <div class="auth-mini-card"><div class="amc-top"><span data-i18n="offers.utilizationUpper">UTILIZATION</span><span>68%</span></div><div class="amc-name" data-i18n="offers.thisMonthListings">This month across 4 listings</div></div>
+    </div>
+  </div>
+
+  <div class="auth-form-side">
+    <div class="auth-form-wrap">
+      
+      <!-- Step 1: Email & Password Credentials -->
+      <div id="login-credentials-section">
+        <h1 data-i18n="auth.loginTitle">Log in to your account</h1>
+        <p class="auth-lede" data-i18n="auth.loginLede">Enter your business email and password to continue.</p>
+
+        <form id="login-form">
+          <div class="field"><label for="l-email" data-i18n="auth.email">Work email</label><input id="l-email" type="email" placeholder="you@business.com" required></div>
+          <div class="field"><label for="l-password" data-i18n="auth.password">Password</label>
+            <div class="password-field">
+              <input id="l-password" type="password" data-i18n-placeholder="auth.passwordYours" placeholder="Your password" required>
+              <button type="button" class="password-toggle" data-target="l-password" data-i18n="auth.show">Show</button>
+            </div>
+          </div>
+
+          <label class="checkbox-field"><input type="checkbox" id="l-remember"> <span data-i18n="auth.rememberMe">Keep me logged in on this device</span></label>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-login-submit" style="margin-top: 1.2rem;" data-i18n="auth.login">Log in</button>
+          <p class="form-error" id="login-error" hidden data-i18n="auth.errorLogin">Enter both your email and password to continue.</p>
+        </form>
+
+        <p class="auth-foot-link"><span data-i18n="auth.forgot">Forgot your password?</span> <a href="#" data-i18n="auth.resetHere">Reset it here</a>.</p>
+      </div>
+
+      <!-- Step 2: Email OTP Verification (In-Place) -->
+      <div id="login-otp-section" hidden>
+        <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <span style="display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 50%; background: var(--brand-soft); color: var(--indigo); font-weight: 700; font-size: 0.85rem;">✉</span>
+          <span style="font-size: 0.85rem; font-weight: 700; color: var(--indigo); text-transform: uppercase; letter-spacing: 0.05em;">Security Verification</span>
+        </div>
+        <h1>Enter verification code</h1>
+        <p class="auth-lede" style="margin-bottom: 1.5rem;">
+          We sent a 6-digit code to <strong id="login-email-display" style="color: var(--ink);">your email</strong> via SMTP. Enter it below to access your account.
+        </p>
+
+        <form id="login-otp-form">
+          <div class="field">
+            <label for="l-otp">6-Digit Email OTP</label>
+            <input id="l-otp" type="text" maxlength="6" inputmode="numeric" placeholder="123456" autocomplete="one-time-code" required style="letter-spacing: 8px; font-size: 1.6rem; text-align: center; font-weight: 800; font-family: monospace; padding: 0.75rem;">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="btn-verify-otp" style="margin-top: 1.2rem;">Verify &amp; Log In</button>
+          
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1.2rem; padding-top: 0.8rem; border-top: 1px solid var(--border-soft);">
+            <button type="button" class="btn btn-outline btn-sm" id="btn-resend-login-otp">Resend OTP</button>
+            <span id="login-resend-timer" style="font-size: 0.8rem; color: var(--ink-faint);"></span>
+          </div>
+
+          <div style="text-align: center; margin-top: 1.2rem;">
+            <button type="button" id="btn-back-to-credentials" style="font-size: 0.85rem; color: var(--indigo); cursor: pointer; background: none; border: none; padding: 0.4rem; text-decoration: underline;">
+              ← Back to email &amp; password
+            </button>
+          </div>
+
+          <p class="form-error" id="login-otp-error" hidden style="margin-top: 1rem; text-align: center;"></p>
+          <p class="form-success" id="login-otp-success" hidden style="margin-top: 1rem; color: var(--emerald); font-size: 0.85rem; text-align: center; font-weight: 600;"></p>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+</main>
+
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>

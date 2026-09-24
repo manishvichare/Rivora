@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trust &amp; Safety Admin Dashboard · Rivora</title>
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="stylesheet" href="css/style.css">
+<style>
+  .admin-badge { display:inline-flex; align-items:center; gap:0.35rem; padding:0.25rem 0.65rem; border-radius:999px; font-size:0.75rem; font-weight:700; }
+  .admin-badge--verified { background:#E8F2E8; color:#285B4B; border:1px solid #BED8C5; }
+  .admin-badge--review { background:#F2E8D1; color:#9B7440; border:1px solid #E7D8A6; }
+  .admin-badge--rejected { background:#F5EAE3; color:#A75650; border:1px solid #E8C4B7; }
+  .admin-table { width:100%; border-collapse:collapse; text-align:left; font-size:0.85rem; }
+  .admin-table th { background:#EEF2EA; padding:0.75rem 1rem; border-bottom:2px solid #DDE6DE; color:#526F70; font-weight:700; }
+  .admin-table td { padding:0.85rem 1rem; border-bottom:1px solid #EFF1E8; vertical-align:middle; }
+  .admin-table tr:hover { background:#EEF2EA; }
+  .admin-btn-action { padding:0.35rem 0.75rem; border-radius:6px; font-size:0.75rem; font-weight:700; cursor:pointer; border:none; transition:all 0.15s; }
+  .admin-btn-approve { background:#3D8067; color:#F8F6EF; }
+  .admin-btn-approve:hover { background:#3C765F; }
+  .admin-btn-reject { background:#B95F58; color:#F8F6EF; }
+  .admin-btn-reject:hover { background:#A75650; }
+  .admin-btn-preview { background:#DDE6DE; color:#29434A; }
+  .admin-btn-preview:hover { background:#C9D8D1; }
+  .tab-nav { display:flex; gap:0.5rem; border-bottom:1px solid #DDE6DE; margin-bottom:1.5rem; }
+  .tab-item { padding:0.6rem 1.25rem; font-weight:600; font-size:0.85rem; color:#6C8582; background:none; border:none; border-bottom:2px solid transparent; cursor:pointer; }
+  .tab-item.active { color:#183B43; border-bottom-color:#3D8067; font-weight:700; }
+</style>
+</head>
+<body>
+<a class="skip-link" href="#main-content">Skip to content</a>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="index.html"><span class="brand-mark"></span>RIVORA</a>
+    <div class="sidebar-role-switch">
+      <a href="provider.html">Provider</a>
+      <a href="seeker.html">Seeker</a>
+      <a href="admin.html" class="is-active">Admin</a>
+    </div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-link is-active" href="admin.html">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2L3 7v6c0 5.5 3.8 10.7 9 12 5.2-1.3 9-6.5 9-12V7l-9-5z" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Trust &amp; Verification</span>
+      </a>
+      <a class="sidebar-link" href="transactions.html">
+        <svg viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M2 10h20" stroke="currentColor" stroke-width="1.8"/></svg>
+        <span>Escrow Payments</span>
+      </a>
+      <a class="sidebar-link" href="analytics.html">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+        <span>Analytics</span>
+      </a>
+    </nav>
+    <div class="sidebar-account">
+      <span class="sidebar-avatar" style="background:#3D8067; color:#F8F6EF;">TS</span>
+      <div><div class="sidebar-account-name">Trust &amp; Safety</div><div class="sidebar-account-sub">Administrator</div></div>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <div class="topbar-title">
+        <h1>Business Proof &amp; Statutory Review</h1>
+        <p>Authenticate statutory licenses, bank accounts, and commercial premises to prevent fake listings.</p>
+      </div>
+      <div class="topbar-actions">
+        <button class="btn btn-outline btn-sm" id="btn-refresh-admin" type="button">Refresh data</button>
+      </div>
+    </header>
+
+    <main class="app-content" id="main-content">
+
+      <!-- Admin KPIs -->
+      <section class="kpi-grid" style="margin-bottom: 1.5rem;">
+        <div class="kpi-card kpi-accent">
+          <div class="kpi-top"><div class="kpi-icon" style="background:#F2E8D1; color:#9A7140;">…</div></div>
+          <div class="kpi-value" id="kpi-pending-docs" style="color:#9A7140;">0</div>
+          <div class="kpi-label">Pending Verification</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><div class="kpi-icon" style="background:#E8F2E8; color:#3D8067;">✓</div></div>
+          <div class="kpi-value" id="kpi-verified-biz" style="color:#3D8067;">0</div>
+          <div class="kpi-label">Verified Businesses</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><div class="kpi-icon" style="background:#E9F0F1; color:#4F718E;">DOC</div></div>
+          <div class="kpi-value" id="kpi-total-docs">0</div>
+          <div class="kpi-label">Total Documents Filed</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-top"><div class="kpi-icon" style="background:#F5EAE3; color:#B95F58;">!</div></div>
+          <div class="kpi-value" id="kpi-duplicate-flags" style="color:#B95F58;">0</div>
+          <div class="kpi-label">Duplicate/Fraud Flags</div>
+        </div>
+      </section>
+
+      <!-- Navigation Tabs -->
+      <div class="tab-nav">
+        <button type="button" class="tab-item active" id="tab-btn-docs">Document Review Queue (<span id="queue-badge-count">0</span>)</button>
+        <button type="button" class="tab-item" id="tab-btn-fraud">Duplicate Detection &amp; Security Logs</button>
+      </div>
+
+      <!-- TAB 1: Document Queue Panel -->
+      <section class="panel" id="panel-docs" style="padding:0; overflow:hidden;">
+        <div style="padding:1rem 1.25rem; border-bottom:1px solid #DDE6DE; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap;">
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <label style="font-size:0.8rem; font-weight:700; color:#526F70;">Filter by Status:</label>
+            <select id="filter-doc-status" style="padding:0.35rem 0.75rem; border:1px solid #C9D8D1; border-radius:6px; font-size:0.8rem;">
+              <option value="all">All Documents</option>
+              <option value="under_review" selected>Pending Review</option>
+              <option value="verified">Verified / Approved</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:0.5rem; align-items:center;">
+            <input type="text" id="search-doc-business" placeholder="Search by Business Name..." style="padding:0.35rem 0.75rem; border:1px solid #C9D8D1; border-radius:6px; font-size:0.8rem; min-width:220px;">
+          </div>
+        </div>
+
+        <div style="overflow-x:auto;">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Doc ID</th>
+                <th>Business Name</th>
+                <th>Proof Category</th>
+                <th>Identifier / Masked Details</th>
+                <th>Submitted Date</th>
+                <th>Status</th>
+                <th style="text-align:right;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="admin-doc-tbody">
+              <tr>
+                <td colspan="7" style="text-align:center; padding:2rem; color:#6C8582;">Loading verification document queue…</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- TAB 2: Fraud & Security Logs Panel -->
+      <section class="panel" id="panel-fraud" style="display:none; padding:1.25rem;">
+        <h3 style="margin-top:0; font-size:1.05rem; color:#183B43;">Identical Signal &amp; Duplicate Registration Flags</h3>
+        <p style="font-size:0.8rem; color:#6C8582;">Automated anomaly detection identifies shared GST numbers, duplicated PANs, or identical bank details between disparate accounts.</p>
+        <div id="fraud-flags-container">
+          <p style="color:#6C8582; font-size:0.85rem;">Loading duplicate security flags…</p>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<!-- Modal: Document Preview & Rejection Note -->
+<div id="admin-preview-modal" class="app-modal-backdrop" hidden>
+  <div class="app-modal-container" role="dialog" style="max-width:650px;">
+    <div class="app-modal-header">
+      <h3 id="preview-modal-title">Document Inspection</h3>
+      <button type="button" class="btn-icon" id="btn-close-preview">✕</button>
+    </div>
+    <div class="app-modal-body" id="preview-modal-body" style="padding:1.25rem;">
+      <!-- Content populated dynamically -->
+    </div>
+    <div class="app-modal-footer" id="preview-modal-footer">
+      <button type="button" class="btn btn-outline" id="btn-modal-close-action">Close</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script src="js/script.js"></script>
+<script>
+let allDocuments = [];
+let adminStats = {};
+
+async function loadAdminData() {
+  const tbody = document.getElementById('admin-doc-tbody');
+  if (!RivoraAPI.isAuthenticated()) {
+    console.warn('[Admin] User not authenticated.');
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#b91c1c;">⚠️ Admin session expired or not logged in. <a href="login.html" style="color:#2563eb; text-decoration:underline; font-weight:700;">Click here to Log In</a> as Administrator.</td></tr>`;
+    }
+    return;
+  }
+
+  try {
+    const [statsRes, docsRes, flagsRes] = await Promise.all([
+      RivoraAPI.getAdminVerificationStats().catch((err) => { console.warn('Stats err:', err); return null; }),
+      RivoraAPI.getAdminProviderDocuments().catch((err) => { console.warn('Docs err:', err); return []; }),
+      RivoraAPI.getAdminDuplicateFlags().catch((err) => { console.warn('Flags err:', err); return []; })
+    ]);
+
+    if (statsRes) {
+      document.getElementById('kpi-pending-docs').textContent = statsRes.pending_documents ?? 0;
+      document.getElementById('kpi-verified-biz').textContent = statsRes.verified_businesses ?? 0;
+      document.getElementById('kpi-total-docs').textContent = statsRes.total_documents ?? 0;
+      document.getElementById('kpi-duplicate-flags').textContent = statsRes.duplicate_flags ?? 0;
+      document.getElementById('queue-badge-count').textContent = statsRes.pending_documents ?? 0;
+    }
+
+    allDocuments = Array.isArray(docsRes) ? docsRes : [];
+    renderDocumentTable();
+    renderFraudFlags(Array.isArray(flagsRes) ? flagsRes : []);
+  } catch (err) {
+    console.error('Failed to load admin verification data:', err);
+  }
+}
+
+function renderDocumentTable() {
+  const tbody = document.getElementById('admin-doc-tbody');
+  const statusFilter = document.getElementById('filter-doc-status').value;
+  const searchFilter = (document.getElementById('search-doc-business').value || '').trim().toLowerCase();
+
+  const filtered = allDocuments.filter(d => {
+    if (statusFilter !== 'all') {
+      if (statusFilter === 'under_review' && d.status !== 'under_review' && d.status !== 'submitted') return false;
+      if (statusFilter === 'verified' && d.status !== 'verified') return false;
+      if (statusFilter === 'rejected' && d.status !== 'rejected') return false;
+    }
+    if (searchFilter) {
+      const bName = (d.business_name || '').toLowerCase();
+      const docType = (d.doc_type || '').toLowerCase();
+      if (!bName.includes(searchFilter) && !docType.includes(searchFilter)) return false;
+    }
+    return true;
+  });
+
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:2rem; color:#6C8582;">No verification documents match your active filters.</td></tr>`;
+    return;
+  }
+
+  const DOC_ICONS = {
+    gstin: 'GSTIN Certificate',
+    business_reg: 'Incorporation Proof',
+    business_address: 'Commercial Address Proof',
+    bank_account: 'Payout Bank Details',
+    fssai: 'FSSAI Food License',
+    fire_permit: 'Fire Safety NOC'
+  };
+
+  tbody.innerHTML = filtered.map(d => {
+    const isVerified = d.status === 'verified';
+    const isRejected = d.status === 'rejected';
+    const badgeCls = isVerified ? 'admin-badge--verified' : (isRejected ? 'admin-badge--rejected' : 'admin-badge--review');
+    const badgeText = isVerified ? 'Verified' : (isRejected ? 'Rejected' : 'Pending review');
+    const createdStr = d.created_at ? new Date(d.created_at).toLocaleDateString('en-IN', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'Recent';
+
+    return `
+      <tr data-doc-id="${d.id}">
+        <td style="font-weight:700; color:#6C8582;">#${d.id}</td>
+        <td><strong>${escapeHtml(d.business_name || 'Business #' + d.business_id)}</strong></td>
+        <td>${DOC_ICONS[d.doc_type] || escapeHtml(d.doc_type.toUpperCase())}</td>
+        <td><code style="background:#EFF1E8; padding:0.2rem 0.4rem; border-radius:4px; font-size:0.8rem;">${escapeHtml(d.doc_number_masked || 'Attached')}</code></td>
+        <td style="color:#6C8582; font-size:0.8rem;">${createdStr}</td>
+        <td><span class="admin-badge ${badgeCls}">${badgeText}</span></td>
+        <td style="text-align:right; white-space:nowrap;">
+          <button type="button" class="admin-btn-action admin-btn-preview" onclick="inspectDocument(${d.id})">Preview</button>
+          ${!isVerified ? `<button type="button" class="admin-btn-action admin-btn-approve" onclick="approveDocument(${d.id})">Approve ✓</button>` : ''}
+          ${!isRejected ? `<button type="button" class="admin-btn-action admin-btn-reject" onclick="promptRejectDocument(${d.id})">Reject ✕</button>` : ''}
+        </td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function renderFraudFlags(flags) {
+  const container = document.getElementById('fraud-flags-container');
+  if (!flags || !flags.length) {
+    container.innerHTML = `<div style="padding:1.5rem; background:#EEF2EA; border:1px dashed #C9D8D1; border-radius:8px; text-align:center; color:#6C8582;">No duplicate registration or identity conflicts detected.</div>`;
+    return;
+  }
+  container.innerHTML = flags.map(f => `
+    <div style="background:#F7E9E3; border:1px solid #E7C5BA; border-radius:8px; padding:0.85rem 1.1rem; margin-bottom:0.75rem; display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <strong style="color:#8F4D48;">Matching signal detected (${escapeHtml(f.matching_signal || 'Identity')})</strong>
+        <p style="margin:0.2rem 0 0 0; font-size:0.8rem; color:#A3564F;">
+          Business #${f.source_business_id} shares ${escapeHtml(f.matching_signal)} (${escapeHtml(f.signal_value_masked || '')}) with Business #${f.matched_business_id}.
+        </p>
+      </div>
+      <span class="admin-badge admin-badge--rejected">Flagged</span>
+    </div>
+  `).join('');
+}
+
+window.inspectDocument = function(docId) {
+  const d = allDocuments.find(x => x.id === docId);
+  if (!d) return;
+
+  const modal = document.getElementById('admin-preview-modal');
+  const title = document.getElementById('preview-modal-title');
+  const body = document.getElementById('preview-modal-body');
+  const footer = document.getElementById('preview-modal-footer');
+
+  title.textContent = `Inspect Document #${d.id} · ${d.business_name || 'Business'}`;
+  
+  body.innerHTML = `
+    <div style="margin-bottom:1rem;">
+      <p style="margin:0 0 0.5rem 0; font-size:0.85rem;"><strong>Proof Category:</strong> ${escapeHtml(d.doc_type.toUpperCase())}</p>
+      <p style="margin:0 0 0.5rem 0; font-size:0.85rem;"><strong>Masked Record:</strong> <code>${escapeHtml(d.doc_number_masked || 'None')}</code></p>
+      <p style="margin:0 0 0.5rem 0; font-size:0.85rem;"><strong>Current Status:</strong> ${escapeHtml(d.status.toUpperCase())}</p>
+    </div>
+    <div style="border:1px solid #C9D8D1; border-radius:8px; padding:1rem; background:#EEF2EA; text-align:center;">
+      <div style="font-size:0.8rem; font-weight:700; letter-spacing:0.08em; margin-bottom:0.5rem; color:#6C8582;">DOCUMENT</div>
+      <strong style="display:block; margin-bottom:0.25rem;">Statutory Compliance File Attached</strong>
+      <span style="font-size:0.78rem; color:#6C8582; display:block; word-break:break-all; margin-bottom:0.75rem;">${escapeHtml(d.file_url || 'https://rivora-docs.secure/uploads/business_proof.pdf')}</span>
+      <a href="${escapeHtml(d.file_url || '#')}" target="_blank" class="btn btn-outline btn-sm">Open Document in Secure Viewer ↗</a>
+    </div>
+  `;
+
+  footer.innerHTML = `
+    <button type="button" class="btn btn-outline" onclick="closePreviewModal()">Close</button>
+    ${d.status !== 'verified' ? `<button type="button" class="btn btn-primary" style="background:#3D8067; border-color:#3D8067;" onclick="approveDocument(${d.id})">Approve Document</button>` : ''}
+  `;
+
+  modal.hidden = false;
+};
+
+window.closePreviewModal = function() {
+  document.getElementById('admin-preview-modal').hidden = true;
+};
+
+window.approveDocument = async function(docId) {
+  try {
+    await RivoraAPI.reviewProviderDocument(docId, {
+      action: 'approve',
+      notes: 'Officially validated by Trust & Safety administrator.'
+    });
+    alert('✓ Document verified and approved! Provider trust badge updated.');
+    closePreviewModal();
+    loadAdminData();
+  } catch (err) {
+    alert(err.message || 'Approval failed');
+  }
+};
+
+window.promptRejectDocument = async function(docId) {
+  const reason = prompt('Please enter the reason for rejection (e.g., Unclear scan, expired license, name mismatch):');
+  if (!reason) return;
+  try {
+    await RivoraAPI.reviewProviderDocument(docId, {
+      action: 'reject',
+      rejection_reason: reason
+    });
+    alert('Document rejected. Rejection reason dispatched to provider.');
+    closePreviewModal();
+    loadAdminData();
+  } catch (err) {
+    alert(err.message || 'Rejection failed');
+  }
+};
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return String(str).replace(/[&<>"']/g, m => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m]));
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('btn-refresh-admin').addEventListener('click', loadAdminData);
+  document.getElementById('filter-doc-status').addEventListener('change', renderDocumentTable);
+  document.getElementById('search-doc-business').addEventListener('input', renderDocumentTable);
+  document.getElementById('btn-close-preview').addEventListener('click', closePreviewModal);
+  document.getElementById('btn-modal-close-action').addEventListener('click', closePreviewModal);
+
+  // Tab navigation
+  document.getElementById('tab-btn-docs').addEventListener('click', () => {
+    document.getElementById('tab-btn-docs').classList.add('active');
+    document.getElementById('tab-btn-fraud').classList.remove('active');
+    document.getElementById('panel-docs').style.display = 'block';
+    document.getElementById('panel-fraud').style.display = 'none';
+  });
+
+  document.getElementById('tab-btn-fraud').addEventListener('click', () => {
+    document.getElementById('tab-btn-fraud').classList.add('active');
+    document.getElementById('tab-btn-docs').classList.remove('active');
+    document.getElementById('panel-docs').style.display = 'none';
+    document.getElementById('panel-fraud').style.display = 'block';
+  });
+
+  loadAdminData();
+});
+</script>
+</body>
+</html>

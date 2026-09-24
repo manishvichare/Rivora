@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Requests · Rivora</title>
+<link rel="icon" type="image/png" href="images/favicon.png">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<a class="skip-link" href="#main-content" data-i18n="nav.home">Skip to content</a>
+
+<div class="app-shell">
+
+  <aside class="sidebar">
+    <a class="sidebar-brand" href="index.html"><span class="brand-mark"></span>RIVORA</a>
+    <div class="sidebar-role-switch"><a href="provider.html" data-i18n="nav.provider">Provider</a><a href="seeker.html" data-i18n="nav.seeker">Seeker</a></div>
+    <nav class="sidebar-nav">
+      <a class="sidebar-link" href="provider.html"><svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg><span data-i18n="nav.dashboard">Dashboard</span></a>
+      <a class="sidebar-link is-active" href="requests.html"><svg viewBox="0 0 24 24" fill="none"><path d="M3 12l2.5-7A2 2 0 0 1 7.4 3.5h9.2a2 2 0 0 1 1.9 1.5L21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 12h5l1.5 2.5h5L16 12h5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg><span data-i18n="nav.requests">Requests</span></a>
+      <a class="sidebar-link" href="analytics.html"><svg viewBox="0 0 24 24" fill="none"><path d="M4 20V10M12 20V4M20 20v-7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="nav.analytics">Analytics</span></a>
+      <a class="sidebar-link" href="profile.html"><svg viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.5" stroke="currentColor" stroke-width="1.8"/><path d="M4.5 20c1.5-4 5-6 7.5-6s6 2 7.5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg><span data-i18n="nav.profile">Profile</span></a>
+    </nav>
+    <div class="sidebar-account">
+      <span class="sidebar-avatar">RB</span>
+      <div><div class="sidebar-account-name">Riverside Banquets</div><div class="sidebar-account-sub" data-i18n="nav.providerSeeker">Provider &amp; Seeker</div></div>
+      <a class="sidebar-logout" href="index.html" data-i18n-title="nav.logout" title="Log out"><svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3M10 8l-4 4 4 4M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+    </div>
+  </aside>
+
+  <div class="app-main">
+    <header class="topbar">
+      <div class="topbar-title"><h1 data-i18n="requests.title">Requests</h1><p data-i18n="requests.lede">Track every request you've sent or received, from first offer to completion.</p></div>
+      <div class="topbar-actions">
+        <div data-lang-switcher></div>
+        <div class="notif-wrap" id="notif-wrap">
+          <button class="btn-icon" id="notif-trigger" type="button" aria-haspopup="true" aria-expanded="false" data-i18n-aria="nav.notifications" aria-label="Notifications">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M13.7 21a2 2 0 0 1-3.4 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+            <span class="notif-dot" id="notif-dot" hidden></span>
+          </button>
+          <div class="notif-panel" id="notif-panel" hidden></div>
+        </div><span class="sidebar-avatar">RB</span></div>
+    </header>
+
+    <main class="app-content" id="main-content">
+      <div class="search-tabs" role="tablist">
+        <button class="search-tab is-active" data-direction="received" role="tab" aria-selected="true"><span data-i18n="requests.received">Received</span> <span class="tab-count" id="count-received"></span></button>
+        <button class="search-tab" data-direction="sent" role="tab" aria-selected="false"><span data-i18n="requests.sent">Sent</span> <span class="tab-count" id="count-sent"></span></button>
+      </div>
+
+      <div class="status-filters" id="status-filters">
+        <button class="status-chip is-active" data-status="all" data-i18n="requests.all">All</button>
+        <button class="status-chip" data-status="pending" data-i18n="status.pending">Pending</button>
+        <button class="status-chip" data-status="negotiating" data-i18n="status.negotiating">Negotiating</button>
+        <button class="status-chip" data-status="confirmed" data-i18n="status.confirmed">Confirmed</button>
+        <button class="status-chip" data-status="completed" data-i18n="status.completed">Completed</button>
+      </div>
+
+      <div class="request-list" id="request-list"></div>
+    </main>
+  </div>
+</div>
+
+<script src="js/translations.js"></script>
+<script src="js/api.js"></script>
+<script src="js/script.js"></script>
+</body>
+</html>
