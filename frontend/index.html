@@ -9,20 +9,24 @@
 </head>
 <body>
 
-<header class="navbar">
+<header class="navbar public-navbar">
   <a class="brand" href="index.html"><span class="brand-mark"></span><span>RIVORA<span class="brand-tagline" data-i18n="brand.tagline">HOSPITALITY EXCHANGE</span></span></a>
-  <nav class="navbar-links">
-    <a href="index.html" class="is-active" data-i18n="nav.home">Home</a>
-    <a href="#how-it-works" data-i18n="nav.howItWorks">How It Works</a>
-    <a href="#resources" data-i18n="nav.resources">Resources</a>
-    <a href="signup.html?role=provider" data-i18n="nav.forProviders">For Providers</a>
-    <a href="signup.html?role=seeker" data-i18n="nav.forSeekers">For Seekers</a>
-    <a href="#trust" data-i18n="nav.about">About</a>
-  </nav>
-  <div class="navbar-actions">
-    <div data-lang-switcher></div>
-    <a class="btn btn-ghost" href="login.html" data-i18n="nav.login">Login</a>
-    <a class="btn btn-primary btn-sm" href="signup.html" data-i18n="nav.getStarted">Get Started</a>
+  <button class="mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="public-nav-drawer" aria-expanded="false"><span></span><span></span><span></span></button>
+  <button class="mobile-nav-backdrop" type="button" aria-label="Close navigation" tabindex="-1"></button>
+  <div class="public-nav-drawer" id="public-nav-drawer">
+    <nav class="navbar-links" aria-label="Main navigation">
+      <a href="index.html" class="is-active" data-i18n="nav.home">Home</a>
+      <a href="#how-it-works" data-i18n="nav.howItWorks">How It Works</a>
+      <a href="#resources" data-i18n="nav.resources">Resources</a>
+      <a href="signup.html?role=provider" data-i18n="nav.forProviders">For Providers</a>
+      <a href="signup.html?role=seeker" data-i18n="nav.forSeekers">For Seekers</a>
+      <a href="#trust" data-i18n="nav.about">About</a>
+    </nav>
+    <div class="navbar-actions">
+      <div data-lang-switcher></div>
+      <a class="btn btn-ghost" href="login.html" data-i18n="nav.login">Login</a>
+      <a class="btn btn-primary btn-sm" href="signup.html" data-i18n="nav.getStarted">Get Started</a>
+    </div>
   </div>
 </header>
 
@@ -634,6 +638,44 @@
   } catch (e) {
     console.warn('[Rivora] Could not load live featured resources:', e.message);
   }
+})();
+</script>
+
+<script>
+(() => {
+  const header = document.querySelector('.public-navbar');
+  if (!header) return;
+  const drawer = header.querySelector('#public-nav-drawer');
+  const toggle = header.querySelector('.mobile-nav-toggle');
+  const backdrop = header.querySelector('.mobile-nav-backdrop');
+  const mobile = window.matchMedia('(max-width: 860px)');
+  const close = (returnFocus = false) => {
+    header.classList.remove('mobile-nav-active');
+    document.body.classList.remove('mobile-nav-open');
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-label', 'Open navigation');
+    drawer.inert = mobile.matches;
+    if (returnFocus) toggle.focus();
+  };
+  const open = () => {
+    drawer.inert = false;
+    header.classList.add('mobile-nav-active');
+    document.body.classList.add('mobile-nav-open');
+    toggle.setAttribute('aria-expanded', 'true');
+    toggle.setAttribute('aria-label', 'Close navigation');
+    const firstLink = drawer.querySelector('a');
+    if (firstLink) firstLink.focus();
+  };
+  const updateMode = () => {
+    if (!mobile.matches) close(false);
+    drawer.inert = mobile.matches && !header.classList.contains('mobile-nav-active');
+  };
+  toggle.addEventListener('click', () => header.classList.contains('mobile-nav-active') ? close(true) : open());
+  backdrop.addEventListener('click', () => close(true));
+  drawer.querySelectorAll('a').forEach(link => link.addEventListener('click', () => close(false)));
+  document.addEventListener('keydown', event => { if (event.key === 'Escape' && header.classList.contains('mobile-nav-active')) close(true); });
+  mobile.addEventListener('change', updateMode);
+  updateMode();
 })();
 </script>
 </body>

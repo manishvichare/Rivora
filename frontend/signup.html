@@ -7,9 +7,9 @@
 <link rel="icon" type="image/png" href="images/favicon.png">
 <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body class="signup-page">
 
-<header class="navbar">
+<header class="navbar signup-navbar">
   <a class="brand" href="index.html"><span class="brand-mark"></span><span>RIVORA<span class="brand-tagline" data-i18n="brand.tagline">HOSPITALITY EXCHANGE</span></span></a>
   <div class="navbar-actions">
     <div data-lang-switcher></div>
@@ -17,23 +17,8 @@
   </div>
 </header>
 
-<main class="auth-shell">
-
-  <div class="auth-side">
-    <div class="auth-side-content">
-      <h2 data-i18n="auth.sideTitle">List spare capacity. Find what you need. One account, both sides.</h2>
-      <p data-i18n="auth.sideText">Join hotels, restaurants, caterers and venues already trading idle rooms, halls, kitchens, vehicles and equipment.</p>
-    </div>
-    <div class="auth-side-cards">
-      <div class="auth-mini-card"><div class="amc-top"><span data-i18n="offers.providerUpper">PROVIDER</span><span data-i18n="offers.idleToday">Idle today</span></div><div class="amc-name" data-i18n="sample.grandHorizon120">Grand Horizon Hotel — 120 rooms</div></div>
-      <div class="auth-mini-card"><div class="amc-top"><span data-i18n="offers.matchScoreUpper">MATCH SCORE</span><span>96%</span></div><div class="amc-name" data-i18n="sample.corporateRoyalMatch">Corporate Events ↔ Royal Banquet Hall</div></div>
-      <div class="auth-mini-card"><div class="amc-top"><span data-i18n="offers.seekerUpper">SEEKER</span><span data-i18n="offers.confirmedUpper">Confirmed</span></div><div class="amc-name" data-i18n="sample.satEveningPrice">Sat, 2–10pm · ₹25,000</div></div>
-    </div>
-  </div>
-
-  <div class="auth-form-side">
-    <div class="auth-form-wrap">
-      
+<main class="signup-main">
+  <section class="signup-card">
       <!-- Stepper Header -->
       <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 1.5rem; padding-bottom: 1rem; border-bottom: 1px solid var(--border);">
         <div style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem; font-weight: 600;">
@@ -162,9 +147,7 @@
         </form>
       </div>
 
-    </div>
-  </div>
-
+  </section>
 </main>
 
 <!-- Firebase App & Auth Compat SDKs -->

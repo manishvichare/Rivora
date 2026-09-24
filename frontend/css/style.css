@@ -3064,3 +3064,201 @@ h1, h2, h3, h4 { font-family: var(--font-head); letter-spacing: -0.025em; }
   .login-main { min-height: calc(100svh - 68px); padding-inline: 1rem; }
   .login-card { border-radius: 18px; }
 }
+
+
+/* ---------- MOBILE PUBLIC NAVIGATION DRAWER ---------- */
+.mobile-nav-toggle, .mobile-nav-backdrop { display: none; }
+.public-nav-drawer { display: contents; }
+@media (max-width: 860px) {
+  .navbar.public-navbar { flex-wrap: nowrap; -webkit-backdrop-filter: none; backdrop-filter: none; }
+  .navbar.public-navbar .brand { flex: 0 0 auto; }
+  .navbar.public-navbar .public-nav-drawer {
+    position: fixed;
+    z-index: 1001;
+    inset: 0 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.5rem;
+    width: min(86vw, 360px);
+    padding: max(5.5rem, calc(env(safe-area-inset-top) + 4.5rem)) 1.25rem max(1.5rem, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    border-left: 1px solid rgba(255,255,255,0.78);
+    background: rgba(250, 252, 250, 0.94);
+    -webkit-backdrop-filter: blur(22px);
+    backdrop-filter: blur(22px);
+    box-shadow: -18px 0 54px rgba(24,59,67,0.15);
+    transform: translateX(105%);
+    visibility: hidden;
+    transition: transform 220ms ease, visibility 220ms ease;
+  }
+  .navbar.public-navbar .navbar-links {
+    display: flex;
+    order: initial;
+    width: auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.35rem;
+    overflow: visible;
+    padding: 0;
+  }
+  .public-nav-drawer .navbar-links a {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 0.75rem 0.9rem;
+    border-radius: 13px;
+    color: #375957;
+    font-size: 0.98rem;
+    text-decoration: none;
+  }
+  .public-nav-drawer .navbar-links a:hover,
+  .public-nav-drawer .navbar-links a.is-active {
+    background: rgba(57,129,124,0.10);
+    color: #20585e;
+  }
+  .navbar.public-navbar .navbar-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.65rem;
+    margin: auto 0 0;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(44,92,87,0.12);
+  }
+  .navbar.public-navbar .navbar-actions [data-lang-switcher] { grid-column: 1 / -1; }
+  .navbar.public-navbar .navbar-actions .btn { display: flex; justify-content: center; }
+  .mobile-nav-toggle {
+    display: flex;
+    flex: 0 0 46px;
+    width: 46px;
+    height: 46px;
+    margin-left: auto;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: 1px solid rgba(44,92,87,0.14);
+    border-radius: 14px;
+    background: rgba(255,255,255,0.72);
+    color: #20585e;
+    cursor: pointer;
+    -webkit-backdrop-filter: blur(12px);
+    backdrop-filter: blur(12px);
+  }
+  .mobile-nav-toggle span { width: 18px; height: 2px; border-radius: 2px; background: currentColor; transition: transform 180ms ease, opacity 180ms ease; }
+  .mobile-nav-toggle:hover { background: rgba(255,255,255,0.96); }
+  .navbar.mobile-nav-active { z-index: 1002; }
+  .navbar.mobile-nav-active .public-nav-drawer { transform: translateX(0); visibility: visible; }
+  .mobile-nav-backdrop {
+    position: fixed;
+    z-index: 1000;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 0;
+    border: 0;
+    background: rgba(17,39,42,0.30);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 220ms ease, visibility 220ms ease;
+  }
+  .navbar.mobile-nav-active .mobile-nav-backdrop { display: block; opacity: 1; visibility: visible; }
+  .navbar.mobile-nav-active .mobile-nav-toggle span:first-child { transform: translateY(7px) rotate(45deg); }
+  .navbar.mobile-nav-active .mobile-nav-toggle span:nth-child(2) { opacity: 0; }
+  .navbar.mobile-nav-active .mobile-nav-toggle span:last-child { transform: translateY(-7px) rotate(-45deg); }
+  body.mobile-nav-open { overflow: hidden; }
+}
+@media (max-width: 560px) {
+  .navbar.public-navbar { padding: 0.65rem 1rem; }
+  .navbar.public-navbar .brand { font-size: 1.05rem; }
+  .navbar.public-navbar .brand-tagline { font-size: 0.52rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .public-nav-drawer, .mobile-nav-toggle span, .mobile-nav-backdrop { transition-duration: 0.01ms; }
+}
+
+/* ---------- CLEAN RESPONSIVE SIGNUP CARD ---------- */
+.signup-page {
+  min-height: 100vh;
+  background:
+    radial-gradient(ellipse 62% 58% at 50% 34%, rgba(70,144,137,0.12), transparent 73%),
+    linear-gradient(145deg, #fbfcfa 0%, #f4f8f6 52%, #fbfaf7 100%);
+}
+.signup-page .signup-navbar {
+  min-height: 76px;
+  padding: 0.85rem clamp(1.25rem, 5vw, 4.5rem);
+  border-color: rgba(44,92,87,0.08);
+  background: rgba(251,252,250,0.66);
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
+}
+.signup-page .signup-navbar .brand { color: #173f42; text-decoration: none; }
+.signup-page .signup-navbar .navbar-actions { gap: 0.7rem; }
+.signup-page .signup-navbar .btn-ghost { display: inline-flex; color: #426966; white-space: nowrap; text-decoration: none; }
+.signup-page .signup-navbar .btn-ghost:hover { color: #20585e; }
+.signup-main {
+  min-height: calc(100vh - 76px);
+  min-height: calc(100svh - 76px);
+  display: grid;
+  place-items: start center;
+  padding: clamp(1.25rem, 4vw, 2.5rem) 1.1rem 3rem;
+}
+.signup-card {
+  width: min(100%, 780px);
+  padding: clamp(1.25rem, 4vw, 2.25rem);
+  border: 1px solid rgba(255,255,255,0.94);
+  border-radius: 22px;
+  background: rgba(255,255,255,0.86);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 22px 60px rgba(27,68,65,0.10), 0 2px 10px rgba(27,68,65,0.035);
+}
+.signup-card h1, .signup-card h2 { color: #173f42; letter-spacing: -0.03em; }
+.signup-card h1 { font-size: clamp(1.55rem, 4vw, 1.85rem); line-height: 1.25; }
+.signup-card .auth-lede { margin: 0.55rem 0 1.4rem; color: #647976; font-size: 0.93rem; line-height: 1.55; }
+.signup-card .field-row { gap: 0 1rem; }
+.signup-card .field { gap: 0.5rem; margin-bottom: 1rem; }
+.signup-card .field label { color: #365b59; font-size: 0.86rem; font-weight: 600; }
+.signup-card .field input, .signup-card .field select {
+  min-height: 52px;
+  border: 1px solid rgba(44,92,87,0.16);
+  border-radius: 12px;
+  background: rgba(255,255,255,0.94);
+  color: #183b43;
+  transition: border-color 150ms ease, box-shadow 150ms ease, background 150ms ease;
+}
+.signup-card .field input:focus, .signup-card .field select:focus {
+  border-color: #438985;
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(64,139,132,0.13);
+}
+.signup-card .password-toggle { color: #4c817c; font-family: var(--font-body); font-size: 0.82rem; font-weight: 600; }
+.signup-card .role-toggle { grid-template-columns: repeat(3, minmax(0,1fr)); gap: 0.55rem; margin-bottom: 1.4rem; }
+.signup-card .role-toggle-btn { min-height: 48px; padding: 0.65rem 0.75rem; border-color: rgba(44,92,87,0.16); border-radius: 12px; background: rgba(255,255,255,0.70); color: #536d69; }
+.signup-card .role-toggle-btn.is-active { border-color: #438985; background: rgba(64,139,132,0.10); color: #20585e; }
+.signup-card .checkbox-field { margin: 0.4rem 0 0.3rem; line-height: 1.55; }
+.signup-card #btn-submit-step1, .signup-card #btn-verify-all { width: 100%; min-height: 54px; margin-top: 0.7rem; border: 0; border-radius: 12px; background: linear-gradient(135deg,#286f75,#3f827a); color: white; font-weight: 650; box-shadow: 0 8px 20px rgba(40,111,117,0.17); }
+.signup-card #btn-submit-step1:hover, .signup-card #btn-verify-all:hover { background: linear-gradient(135deg,#235f65,#36756d); box-shadow: 0 11px 24px rgba(40,111,117,0.22); transform: translateY(-1px); }
+.signup-card #btn-edit-details { width: 100%; margin-top: 0.55rem; border: 1px solid rgba(44,92,87,0.14); border-radius: 12px; background: rgba(255,255,255,0.66); color: #426966; }
+.signup-card #step1-indicator, .signup-card #step2-indicator { flex: 0 0 26px; width: 26px !important; height: 26px !important; background: rgba(64,139,132,0.12) !important; color: #286f75 !important; }
+.signup-card #step2-indicator { background: rgba(44,92,87,0.08) !important; color: #71817e !important; }
+.signup-card #v-email-card { border-color: rgba(44,92,87,0.12) !important; border-radius: 14px !important; background: rgba(255,255,255,0.72) !important; box-shadow: none !important; }
+.signup-card #v-email-otp { min-height: 56px; border: 1px solid rgba(44,92,87,0.16); border-radius: 12px !important; background: white; }
+.signup-card .form-error { font-family: var(--font-body); font-size: 0.85rem; line-height: 1.5; }
+@media (max-width: 560px) {
+  .signup-page .signup-navbar { min-height: 66px; padding: 0.7rem 0.9rem; gap: 0.5rem; }
+  .signup-page .signup-navbar .brand { gap: 0.45rem; font-size: 1rem; }
+  .signup-page .signup-navbar .brand-mark { width: 28px; height: 28px; }
+  .signup-page .signup-navbar .brand-tagline { display: none; }
+  .signup-page .signup-navbar .navbar-actions { gap: 0.35rem; }
+  .signup-page .signup-navbar .lang-trigger { padding: 0.45rem 0.55rem; }
+  .signup-page .signup-navbar .btn-ghost { padding: 0.45rem 0.55rem; font-size: 0.78rem; }
+  .signup-main { min-height: calc(100svh - 66px); padding: 1rem 0.75rem 2rem; }
+  .signup-card { padding: 1.2rem 1rem; border-radius: 18px; }
+  .signup-card .field-row { grid-template-columns: 1fr; gap: 0; }
+  .signup-card .role-toggle { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 0.4rem; margin-bottom: 1.1rem; }
+  .signup-card .role-toggle-btn { padding-inline: 0.35rem; font-size: 0.73rem; }
+  .signup-card #v-email-card { padding: 1rem !important; }
+  .signup-card #v-email-card > div:first-child { align-items: flex-start !important; gap: 0.5rem; }
+  .signup-card #v-email-timer { white-space: nowrap; }
+}
