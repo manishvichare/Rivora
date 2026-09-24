@@ -130,7 +130,7 @@
             </div>
 
             <div class="field" style="margin-bottom: 0.8rem;">
-              <label for="v-email-otp" style="font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 6px; display: block;">Enter 6-digit code sent to your email:</label>
+              <label for="v-email-otp" style="font-size: 0.82rem; color: var(--ink-soft); margin-bottom: 6px; display: block;">Enter the 6-digit verification code:</label>
               <input id="v-email-otp" type="text" maxlength="6" pattern="[0-9]{6}" inputmode="numeric" placeholder="• • • • • •" required style="font-size: 1.6rem; letter-spacing: 10px; text-align: center; font-family: monospace; font-weight: 800; height: 52px; border-radius: 8px;">
             </div>
 
@@ -150,10 +150,10 @@
           <!-- Trust Callout -->
           <div style="background: rgba(61, 128, 103, 0.08); border: 1px solid rgba(61, 128, 103, 0.25); border-radius: 8px; padding: 0.8rem 1rem; margin-bottom: 1.4rem; font-size: 0.82rem; color: var(--ink-soft); display: flex; align-items: center; gap: 0.6rem;">
             <span aria-hidden="true">✓</span>
-            <span>Secured email verification. A single-use verification code was sent directly to your registered work email.</span>
+            <span id="v-email-delivery-note">Your registration code is valid for this verification session only.</span>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-block" id="btn-verify-all" style="height: 48px; font-size: 0.98rem; font-weight: 600;">Verify Email & Create Account →</button>
+          <button type="submit" class="btn btn-primary btn-block" id="btn-verify-all" style="height: 48px; font-size: 0.98rem; font-weight: 600;">Verify & Create Account →</button>
           
           <button type="button" class="btn btn-ghost btn-block" id="btn-edit-details" style="margin-top: 0.6rem; font-size: 0.85rem;">← Edit Business Details</button>
 

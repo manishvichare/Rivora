@@ -63,13 +63,13 @@
           <span style="font-size: 0.85rem; font-weight: 700; color: var(--indigo); text-transform: uppercase; letter-spacing: 0.05em;">Security Verification</span>
         </div>
         <h1>Enter verification code</h1>
-        <p class="auth-lede" style="margin-bottom: 1.5rem;">
-          We sent a 6-digit code to <strong id="login-email-display" style="color: var(--ink);">your email</strong> via SMTP. Enter it below to access your account.
+        <p class="auth-lede" id="login-otp-instructions" style="margin-bottom: 1.5rem;">
+          A 6-digit verification code is required to access your account.
         </p>
 
         <form id="login-otp-form">
           <div class="field">
-            <label for="l-otp">6-Digit Email OTP</label>
+            <label for="l-otp">6-Digit Verification Code</label>
             <input id="l-otp" type="text" maxlength="6" inputmode="numeric" placeholder="123456" autocomplete="one-time-code" required style="letter-spacing: 8px; font-size: 1.6rem; text-align: center; font-weight: 800; font-family: monospace; padding: 0.75rem;">
           </div>
 

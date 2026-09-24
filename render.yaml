@@ -14,9 +14,5 @@ services:
         sync: false
       - key: JWT_SECRET_KEY
         generateValue: true
-      - key: GMAIL_USER
-        sync: false
-      - key: GMAIL_APP_PASSWORD
-        sync: false
       - key: FAST2SMS_API_KEY
         sync: false

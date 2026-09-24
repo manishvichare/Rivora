@@ -40,3 +40,6 @@ if not JWT_SECRET_KEY:
     JWT_SECRET_KEY = "rivora-hackathon-demo-secret-key-2026-prod"
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = 60 * 24  # 24 hours
+
+# Simulated authentication code requested for the Render demo deployment.
+DEMO_OTP_CODE = "676767"

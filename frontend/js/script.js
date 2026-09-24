@@ -582,6 +582,13 @@ function initSignupPage() {
     if (vEmailCard) vEmailCard.style.display = 'block';
 
     if (vEmailDisplay) vEmailDisplay.textContent = sessionData.email_masked || '';
+    const deliveryNote = document.getElementById('v-email-delivery-note');
+    if (deliveryNote) {
+      deliveryNote.textContent = sessionData.demo_mode
+        ? 'Demo OTP: ' + (sessionData.demo_otp || 'use the configured demo code') + '. This is not email verification.'
+        : 'A single-use verification code was sent to your registered work email.';
+    }
+    if (btnResendEmail) btnResendEmail.style.display = sessionData.demo_mode ? 'none' : '';
     if (vPhoneDisplay) vPhoneDisplay.textContent = sessionData.phone_masked || '';
 
     if (step1) step1.hidden = true;
@@ -600,6 +607,8 @@ function initSignupPage() {
       email_masked: sessionData.email_masked,
       phone_masked: sessionData.phone_masked,
       expires_at: sessionData.expires_at,
+      demo_mode: !!sessionData.demo_mode,
+      demo_otp: sessionData.demo_otp || null,
       selected_role: selectedRole
     }));
   }
@@ -710,7 +719,7 @@ function initSignupPage() {
       try {
         if (btnVerifyAll) {
           btnVerifyAll.disabled = true;
-          btnVerifyAll.textContent = 'Verifying Email & Creating Account...';
+          btnVerifyAll.textContent = 'Verifying code & creating account...';
         }
 
         await RivoraAPI.verifySignup(currentSessionId, emailOtp);
@@ -718,7 +727,7 @@ function initSignupPage() {
         sessionStorage.removeItem('rivora_pending_signup');
         if (success2) {
           success2.hidden = false;
-          success2.textContent = '✓ Email verified! Loading your dashboard...';
+          success2.textContent = '✓ Verification complete! Loading your dashboard...';
         }
 
         setTimeout(() => {
@@ -728,12 +737,12 @@ function initSignupPage() {
       } catch (err) {
         if (error2) {
           error2.hidden = false;
-          error2.textContent = err.message || 'Verification failed. Please check your email code.';
+          error2.textContent = err.message || 'Verification failed. Please check the verification code.';
         }
       } finally {
         if (btnVerifyAll) {
           btnVerifyAll.disabled = false;
-          btnVerifyAll.textContent = 'Verify Email & Create Account →';
+          btnVerifyAll.textContent = 'Verify & Create Account →';
         }
       }
     });
@@ -863,7 +872,7 @@ function initLoginPage() {
     cooldownInterval = setInterval(tick, 1000);
   }
 
-  // Step 1: Submit Credentials -> Triggers SMTP Email OTP
+  // Step 1: Submit Credentials -> Starts login verification
   credForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const submitBtn = document.getElementById('btn-login-submit') || credForm.querySelector('button[type="submit"]');
@@ -888,6 +897,13 @@ function initLoginPage() {
         if (res && res.require_otp && res.session_id) {
           currentLoginSessionId = res.session_id;
           if (emailDisplay) emailDisplay.textContent = res.email_masked || email;
+          const otpInstructions = document.getElementById('login-otp-instructions');
+          if (otpInstructions) {
+            otpInstructions.textContent = res.demo_mode
+              ? 'Demo mode is active. Enter the demo code ' + (res.demo_otp || '') + ' to access your account.'
+              : 'Enter the 6-digit code sent to ' + (res.email_masked || email) + ' to access your account.';
+          }
+          if (btnResend) btnResend.style.display = res.demo_mode ? 'none' : '';
           
           if (credSection) credSection.hidden = true;
           if (otpSection) otpSection.hidden = false;
@@ -898,7 +914,9 @@ function initLoginPage() {
           if (otpErrorEl) otpErrorEl.hidden = true;
           if (otpSuccessEl) {
             otpSuccessEl.hidden = false;
-            otpSuccessEl.textContent = `✓ Verification code sent to ${res.email_masked || email}`;
+            otpSuccessEl.textContent = res.demo_mode
+              ? '✓ Demo mode active. Use code ' + (res.demo_otp || '') + '.'
+              : `✓ Verification code sent to ${res.email_masked || email}`;
           }
 
           startResendCooldown(res.resend_cooldown_seconds || 60);
@@ -973,7 +991,9 @@ function initLoginPage() {
         const res = await RivoraAPI.resendLoginOtp(currentLoginSessionId);
         if (otpSuccessEl) {
           otpSuccessEl.hidden = false;
-          otpSuccessEl.textContent = '✓ A new verification code has been dispatched to your email.';
+          otpSuccessEl.textContent = res?.demo_mode
+            ? '✓ Demo mode active. Use code ' + (res.demo_otp || '') + '.'
+            : '✓ A new verification code has been dispatched to your email.';
         }
         if (otpErrorEl) otpErrorEl.hidden = true;
         startResendCooldown(res?.resend_cooldown_seconds || 60);

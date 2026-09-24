@@ -9,11 +9,15 @@ from typing import Union
 from database import get_db
 import models, schemas
 from auth import hash_password, verify_password, create_access_token, get_current_business
-from config import JWT_SECRET_KEY
-from services.email_service import send_verification_email, send_login_otp_email
+from config import DEMO_OTP_CODE, JWT_SECRET_KEY
 from services.sms_service import send_verification_sms
 
 router = APIRouter(prefix="/auth", tags=["businesses"])
+
+
+def _new_email_otp() -> str:
+    """Return the configured simulation code for signup and login."""
+    return DEMO_OTP_CODE
 
 
 @router.post("/signup")
@@ -28,7 +32,7 @@ def direct_signup_blocked():
 def initiate_signup(payload: schemas.SignupInitiateIn, db: Session = Depends(get_db)):
     """
     Step 1 of Pre-Registration:
-    Validates user credentials and dispatches 6-digit OTPs to both work email and mobile phone.
+    Validates account details and creates a pending signup with the simulation code.
     NO USER ACCOUNT IS CREATED IN THE DATABASE AT THIS STEP.
     """
     norm_email = payload.email.strip().lower()
@@ -42,9 +46,9 @@ def initiate_signup(payload: schemas.SignupInitiateIn, db: Session = Depends(get
     if clean_phone and db.query(models.Business).filter(models.Business.phone.like(f"%{clean_phone}")).first():
         raise HTTPException(status_code=400, detail="An account with this mobile phone number already exists. Please log in.")
 
-    # Generate 6-digit cryptographically random OTPs
-    email_otp = f"{random.randint(100000, 999999)}"
-    mobile_otp = f"{random.randint(100000, 999999)}"
+    # Generate the shared simulation code for both optional verification fields.
+    email_otp = _new_email_otp()
+    mobile_otp = email_otp
 
     # Generate unique secure session token
     session_id = secrets.token_urlsafe(32)
@@ -83,12 +87,7 @@ def initiate_signup(payload: schemas.SignupInitiateIn, db: Session = Depends(get
     db.add(pending)
     db.commit()
 
-    # Deliver email before reporting an active verification session. No local OTP fallback.
-    email_delivery = send_verification_email(norm_email, payload.name, email_otp, expires_at)
-    if not email_delivery.get("delivered_via_smtp"):
-        db.delete(pending)
-        db.commit()
-        raise HTTPException(status_code=503, detail=email_delivery.get("delivery_message", "We could not send the verification email. Please try again later."))
+    # Email delivery is intentionally skipped; the UI displays the simulation code.
     # Mobile SMS disabled - Email-only OTP mode active
 
     email_parts = norm_email.split("@")
@@ -102,7 +101,9 @@ def initiate_signup(payload: schemas.SignupInitiateIn, db: Session = Depends(get
         expires_at=expires_at.isoformat() + "Z",
         valid_until=expires_at.strftime("%Y-%m-%d %H:%M:%S UTC"),
         resend_cooldown_seconds=60,
-        message=f"Verification code sent to {email_masked}."
+        message=f"Demo mode is active. Use code {email_otp}.",
+        demo_mode=True,
+        demo_otp=email_otp,
     )
 
 
@@ -110,8 +111,7 @@ def initiate_signup(payload: schemas.SignupInitiateIn, db: Session = Depends(get
 def verify_signup_and_create_account(payload: schemas.SignupVerifyIn, db: Session = Depends(get_db)):
     """
     Step 2 of Pre-Registration:
-    Validates Email OTP sent to user's registered work email.
-    Only when Email OTP is verified, the user account is created in the database and access token is returned.
+    Validates the signup simulation code. The account is created when the code is accepted and an access token is returned.
     """
     pending = db.query(models.PendingRegistration).filter(
         models.PendingRegistration.session_id == payload.session_id,
@@ -152,7 +152,7 @@ def verify_signup_and_create_account(payload: schemas.SignupVerifyIn, db: Sessio
         db.commit()
         raise HTTPException(
             status_code=400,
-            detail="Incorrect Email OTP. Please check the code sent to your work email."
+            detail="Incorrect verification code. Please enter the demo code shown on the page."
         )
 
     if not mobile_valid:
@@ -237,13 +237,9 @@ def resend_signup_otp(payload: schemas.SignupResendIn, db: Session = Depends(get
     failed_channels = []
 
     if channel in ["email", "both"]:
-        new_email_otp = f"{random.randint(100000, 999999)}"
-        email_delivery = send_verification_email(pending.email, pending.name, new_email_otp, pending.expires_at)
-        if email_delivery.get("delivered_via_smtp"):
-            pending.email_otp_hash = hashlib.sha256((new_email_otp + pending.session_id + JWT_SECRET_KEY).encode()).hexdigest()
-            delivered_channels.append("email")
-        else:
-            failed_channels.append("email")
+        new_email_otp = _new_email_otp()
+        pending.email_otp_hash = hashlib.sha256((new_email_otp + pending.session_id + JWT_SECRET_KEY).encode()).hexdigest()
+        delivered_channels.append("email")
 
     if channel in ["mobile", "both"]:
         new_mobile_otp = f"{random.randint(100000, 999999)}"
@@ -263,7 +259,7 @@ def resend_signup_otp(payload: schemas.SignupResendIn, db: Session = Depends(get
     pending.resend_cooldown_until = now + timedelta(seconds=60)
     db.commit()
     delivered_channel = "both" if len(delivered_channels) == 2 else delivered_channels[0]
-    delivery_message = f"Fresh verification code dispatched to your {delivered_channel}."
+    delivery_message = f"Demo mode is active. Use code {DEMO_OTP_CODE}."
     if failed_channels:
         delivery_message += f" The {', '.join(failed_channels)} channel could not be reached."
 
@@ -340,7 +336,7 @@ def login(payload: schemas.BusinessLogin, db: Session = Depends(get_db)):
         raise HTTPException(status_code=401, detail="Incorrect email or password")
 
     # Generate 6-digit cryptographically random OTP and session ID
-    otp = f"{random.randint(100000, 999999)}"
+    otp = _new_email_otp()
     session_id = secrets.token_hex(32)
 
     # Hash OTP with server secret salt so plaintext is NEVER stored in database
@@ -369,12 +365,7 @@ def login(payload: schemas.BusinessLogin, db: Session = Depends(get_db)):
     db.add(pending)
     db.commit()
 
-    # Do not create an apparently active login session unless SMTP accepted the OTP.
-    email_delivery = send_login_otp_email(email_clean, business.name, otp, expires_at)
-    if not email_delivery.get("delivered_via_smtp"):
-        db.delete(pending)
-        db.commit()
-        raise HTTPException(status_code=503, detail=email_delivery.get("delivery_message", "We could not send the verification email. Please try again later."))
+    # The login challenge uses the simulation code and does not contact SMTP.
     parts = email_clean.split("@")
     masked_user = (parts[0][:2] + "***" + parts[0][-1]) if len(parts[0]) > 3 else (parts[0][:1] + "***")
     email_masked = f"{masked_user}@{parts[1]}"
@@ -385,7 +376,9 @@ def login(payload: schemas.BusinessLogin, db: Session = Depends(get_db)):
         email_masked=email_masked,
         expires_at=expires_at.isoformat() + "Z",
         resend_cooldown_seconds=60,
-        message=f"Verification code sent to {email_masked}",
+        message=f"Demo mode is active. Use code {otp}.",
+        demo_mode=True,
+        demo_otp=otp,
     )
 
 
@@ -463,11 +456,8 @@ def resend_login_otp(payload: schemas.LoginResendIn, db: Session = Depends(get_d
     if not business:
         raise HTTPException(status_code=404, detail="Business not found")
 
-    new_otp = f"{random.randint(100000, 999999)}"
+    new_otp = _new_email_otp()
     new_expires_at = now + timedelta(minutes=10)
-    email_delivery = send_login_otp_email(pending.email, business.name, new_otp, new_expires_at)
-    if not email_delivery.get("delivered_via_smtp"):
-        raise HTTPException(status_code=503, detail=email_delivery.get("delivery_message", "We could not send the verification email. Please try again later."))
     pending.otp_hash = hashlib.sha256((new_otp + pending.session_id + JWT_SECRET_KEY).encode()).hexdigest()
     pending.expires_at = new_expires_at
     pending.resend_cooldown_until = now + timedelta(seconds=60)
@@ -476,7 +466,9 @@ def resend_login_otp(payload: schemas.LoginResendIn, db: Session = Depends(get_d
 
     return {
         "success": True,
-        "message": "A new verification code has been dispatched to your email.",
+        "message": f"Demo mode is active. Use code {new_otp}.",
+        "demo_mode": True,
+        "demo_otp": new_otp,
         "resend_cooldown_seconds": 60,
     }
 

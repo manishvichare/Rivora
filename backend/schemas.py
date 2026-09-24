@@ -34,6 +34,8 @@ class SignupInitiateOut(BaseModel):
     valid_until: str
     resend_cooldown_seconds: int = 60
     message: str
+    demo_mode: bool = False
+    demo_otp: Optional[str] = None
 
 
 class SignupVerifyIn(BaseModel):
@@ -78,6 +80,8 @@ class LoginResponseOut(BaseModel):
     expires_at: str
     resend_cooldown_seconds: int = 60
     message: str
+    demo_mode: bool = False
+    demo_otp: Optional[str] = None
 
 
 class LoginOtpVerify(BaseModel):
