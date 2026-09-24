@@ -37,8 +37,12 @@
     <div class="hero-scene" aria-hidden="true"></div>
     <div class="hero-inner">
       <div>
-        <span class="eyebrow-pill"><i></i><span data-i18n="hero.eyebrow">B2B Hospitality Resource Exchange</span></span>
-        <h1><span data-i18n="hero.title">Connect hospitality resources with the businesses that need them</span> <span data-i18n="hero.titleAccent">right now.</span></h1>
+        <h1 class="hero-title">
+          <span class="hero-title-welcome" data-i18n="hero.title">Welcome to Rivora</span>
+          <span class="hero-title-lead" data-i18n="hero.titleAccent">where you can connect with</span>
+          <span class="hero-typewriter" aria-hidden="true"><span class="hero-typewriter-sizer">Hospitality</span><span class="hero-typewriter-text" id="hero-typewriter-text">Hospitality</span><span class="hero-typewriter-caret"></span></span>
+          <span class="visually-hidden" data-i18n="hero.typeSummary">Hospitality, Resources, Businesses</span>
+        </h1>
         <p class="hero-lede" data-i18n="hero.lede">
           Rivora matches spare hotel rooms, banquet halls, kitchens, vehicles and
           equipment with businesses that need them — ranked by price fit, distance,
@@ -678,5 +682,43 @@
   updateMode();
 })();
 </script>
+
+<script>
+(() => {
+  const target = document.getElementById('hero-typewriter-text');
+  if (!target) return;
+  const sizer = document.querySelector('.hero-typewriter-sizer');
+  const motionOff = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let words = [];
+  let wordIndex = 0;
+  let letterIndex = 0;
+  let deleting = false;
+  let timer;
+  const loadWords = () => {
+    const dict = (window.RIVORA_TRANSLATIONS || {}).en || {};
+    const active = (window.RIVORA_TRANSLATIONS || {})[document.documentElement.lang] || dict;
+    words = [active['hero.typeHospitality'], active['hero.typeResources'], active['hero.typeBusinesses']].filter(Boolean);
+    if (!words.length) words = ['Hospitality', 'Resources', 'Businesses'];
+    wordIndex = 0;
+    letterIndex = words[0].length;
+    target.textContent = words[0];
+    if (sizer) sizer.textContent = words.reduce((longest, word) => word.length > longest.length ? word : longest, '');
+    if (!motionOff) { clearTimeout(timer); deleting = false; timer = setTimeout(tick, 1500); }
+  };
+  const tick = () => {
+    const word = words[wordIndex];
+    letterIndex += deleting ? -1 : 1;
+    target.textContent = word.slice(0, Math.max(0, letterIndex));
+    let delay = deleting ? 42 : 84;
+    if (!deleting && letterIndex >= word.length) { deleting = true; delay = 1450; }
+    else if (deleting && letterIndex <= 0) { deleting = false; wordIndex = (wordIndex + 1) % words.length; delay = 260; }
+    timer = setTimeout(tick, delay);
+  };
+  const observer = new MutationObserver(loadWords);
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  loadWords();
+})();
+</script>
+
 </body>
 </html>

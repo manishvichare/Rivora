@@ -3262,3 +3262,103 @@ h1, h2, h3, h4 { font-family: var(--font-head); letter-spacing: -0.025em; }
   .signup-card #v-email-card > div:first-child { align-items: flex-start !important; gap: 0.5rem; }
   .signup-card #v-email-timer { white-space: nowrap; }
 }
+
+
+/* ---------- HOMEPAGE HERO: editorial type and restrained motion ---------- */
+.hero {
+  background: linear-gradient(118deg, #173f43 0%, #20585e 58%, #286f75 100%);
+  box-shadow: 0 24px 64px -38px rgba(24,59,67,0.55);
+}
+.hero .hero-scene {
+  background-image:
+    radial-gradient(ellipse 70% 76% at 8% 12%, rgba(228,205,151,0.10), transparent 68%),
+    radial-gradient(ellipse 64% 72% at 92% 84%, rgba(126,177,160,0.18), transparent 72%);
+}
+.hero .hero-scene::after { background: none; }
+.hero-title {
+  max-width: 18ch !important;
+  margin: 0;
+  font-family: var(--font-head);
+  font-size: clamp(2.75rem, 5.1vw, 4.25rem) !important;
+  font-weight: 700;
+  line-height: 1.04 !important;
+  letter-spacing: -0.055em;
+}
+.hero-title > span { display: block; color: #f7f7f1 !important; }
+.hero-title .hero-title-welcome { animation: hero-copy-enter 620ms cubic-bezier(.2,.7,.25,1) both; }
+.hero-title .hero-title-lead {
+  max-width: 19ch;
+  margin-top: 0.32em;
+  color: rgba(247,247,241,0.78) !important;
+  font-size: 0.52em;
+  font-weight: 500;
+  line-height: 1.25;
+  letter-spacing: -0.025em;
+  animation: hero-copy-enter 680ms 90ms cubic-bezier(.2,.7,.25,1) both;
+}
+.hero-title .hero-typewriter {
+  display: inline-grid;
+  grid-template-columns: max-content 2px;
+  align-items: baseline;
+  gap: 0.12em;
+  width: max-content;
+  max-width: 100%;
+  margin-top: 0.14em;
+  color: #e5d5a5 !important;
+  font-size: 0.88em;
+  font-weight: 700;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+  vertical-align: top;
+  animation: hero-copy-enter 720ms 170ms cubic-bezier(.2,.7,.25,1) both;
+}
+.hero-typewriter-sizer, .hero-typewriter-text { grid-area: 1 / 1; white-space: nowrap; }
+.hero-typewriter-sizer { visibility: hidden; }
+.hero-typewriter-text { min-width: 0; }
+.hero-typewriter-caret {
+  grid-area: 1 / 2;
+  display: block;
+  width: 2px;
+  height: 0.78em;
+  border-radius: 2px;
+  background: currentColor;
+  animation: hero-caret-blink 950ms step-end infinite;
+}
+.hero .hero-lede {
+  max-width: 46ch;
+  margin-top: 1.2rem;
+  color: rgba(247,247,241,0.76);
+  font-family: var(--font-body);
+  font-size: 0.98rem;
+  line-height: 1.72;
+}
+.hero .hero-actions { margin-top: 1.65rem; }
+.hero .hero-actions .btn { transition: transform 180ms ease, background-color 180ms ease, box-shadow 180ms ease; }
+.hero .hero-trust { gap: 1.25rem; margin-top: 1.7rem; }
+.hero .hero-trust > span { font-family: var(--font-body); font-size: 0.79rem; }
+.hero .hero-trust i { color: #d8e8dd; }
+.hero .hcard { animation: hero-card-enter 720ms cubic-bezier(.2,.7,.25,1) both; }
+.hero .hcard.c1 { animation-delay: 120ms; }
+.hero .hcard.c2 { animation-delay: 250ms; }
+.hero .hcard.c3 { animation-delay: 380ms; }
+.hero .match-node { animation: none; }
+.hero .hero-beam path { stroke: rgba(247,247,241,0.25); }
+@keyframes hero-copy-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-card-enter { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hero-caret-blink { 50% { opacity: 0; } }
+@media (max-width: 860px) {
+  .hero-title { max-width: 20ch !important; font-size: clamp(2.6rem, 7.2vw, 3.8rem) !important; }
+  .hero .hero-visual { height: 300px; }
+}
+@media (max-width: 560px) {
+  .hero-title { font-size: clamp(2.35rem, 11vw, 3.2rem) !important; }
+  .hero-title .hero-title-lead { max-width: 18ch; }
+  .hero-title .hero-typewriter { font-size: 0.82em; }
+  .hero .hero-visual { height: 245px; }
+  .hero .hero-trust { gap: 0.75rem 1rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hero-title .hero-title-welcome, .hero-title .hero-title-lead,
+  .hero-title .hero-typewriter, .hero .hcard { animation: none !important; }
+  .hero-typewriter-caret { animation: none !important; }
+}
