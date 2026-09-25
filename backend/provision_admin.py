@@ -1,9 +1,4 @@
-"""Create or recover the Rivora admin account using the configured database.
-
-Run from the backend directory in an environment that has DATABASE_URL set.
-Passwords are requested interactively and are never printed or accepted as args.
-"""
-from getpass import getpass
+"""Create or recover the Rivora admin account using the configured database."""
 import os
 
 from auth import hash_password
@@ -14,23 +9,17 @@ from models import Business
 def main() -> None:
     env_name = os.getenv("APP_ENV", "development").lower()
     print(f"Running admin provisioning against configured database (Environment: {env_name}).")
-    email = input("Admin email: ").strip().lower()
-    if "@" not in email or email.startswith("@") or email.endswith("@"):
-        raise SystemExit("Enter a valid email address.")
-
-    password = getpass("Set admin password (at least 12 characters): ")
-    confirmation = getpass("Confirm admin password: ")
-    if len(password) < 12:
-        raise SystemExit("Password must contain at least 12 characters.")
-    if password != confirmation:
-        raise SystemExit("Passwords do not match.")
+    
+    # Direct set kela ahe, terminal var type karaychi garaj nahi
+    email = "vicharemanish717@gmail.com"
+    password = "Admin@12345678"
 
     db = SessionLocal()
     try:
         account = db.query(Business).filter(Business.email == email).first()
         created = account is None
         if created:
-            name = input("Admin display name: ").strip() or "Rivora Admin"
+            name = "Rivora Admin"
             account = Business(
                 name=name,
                 business_type="admin",
