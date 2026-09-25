@@ -40,20 +40,21 @@ Rivora is configured as one Render Python web service. FastAPI serves the existi
 4. If phone verification uses Firebase, add the deployed .onrender.com hostname to Firebase Authentication's authorized domains.
 5. Deploy. The service exposes the frontend at /, API routes on the same hostname, and /health for Render health checks.
 
-After the owner registers and verifies their account through the existing signup flow, grant admin access once in Supabase SQL Editor:
+### Provision or recover the admin account
 
-```sql
-UPDATE public.businesses
-SET is_admin = TRUE, role = 'admin'
-WHERE email = 'YOUR_VERIFIED_OWNER_EMAIL';
+The admin dashboard is available at `/admin.html`. Provision the designated owner account from a trusted shell connected to the production environment. This script creates the account if it does not exist; otherwise it securely resets its password and grants admin access to that existing account. The password is entered interactively and is never printed or stored in the command history.
+
+```powershell
+cd backend
+python provision_admin.py
 ```
 
-Admin endpoints check this database flag; frontend identity alone cannot grant admin access.
+Enter `vicharemanish717@gmail.com` when prompted, then choose and confirm a new password of at least 12 characters. Run this only in an environment whose `DATABASE_URL` points to the intended production database. Admin endpoints still enforce the database `is_admin` flag; frontend identity alone cannot grant admin access.
 
 Do not use a local SQLite/MySQL file as Render production storage. Render's service filesystem is ephemeral; use a hosted PostgreSQL database so signup and application data survive deploys and restarts. On startup, SQLAlchemy creates missing tables from `backend/models.py`; it does not migrate existing data or apply later model changes to existing tables. The MySQL-specific `database/schema.sql` is for local MySQL only and must not be run against Supabase. Production startup deliberately fails with a clear error if DATABASE_URL or JWT_SECRET_KEY is missing or DATABASE_URL is not PostgreSQL.
 Render’s free PostgreSQL plan is temporary, so choose a persistent paid database or another durable PostgreSQL provider for production data.
 
-For local development, backend/.env.example documents the expected settings. The frontend served by FastAPI uses the current origin for API calls; Vite on port 5173 continues to call the local backend at port 8000.
+For local development, backend/.env.example documents the expected settings. The frontend served by FastAPI uses the current origin for API calls; Vite on port 5173 continues to call the local backend at port 8000. If you host the frontend separately, define `window.RIVORA_API_BASE` to the deployed API origin in the page before loading `js/api.js`.
 
 ## Frontend
 

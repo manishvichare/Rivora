@@ -4,7 +4,13 @@
  * Handles API communication, authentication tokens, and endpoints.
  */
 
-const API_BASE = window.location.port === "5173" ? "http://localhost:8000" : window.location.origin;
+// A separately hosted frontend can set `window.RIVORA_API_BASE` before this
+// file loads. Local development and same-origin production remain defaults.
+const configuredApiBase = typeof window.RIVORA_API_BASE === "string"
+  ? window.RIVORA_API_BASE.trim().replace(/\/+$/, "")
+  : "";
+const isLocalFrontend = window.location.port === "5173" || window.location.protocol === "file:";
+const API_BASE = configuredApiBase || (isLocalFrontend ? "http://localhost:8000" : window.location.origin);
 
 const RivoraAPI = {
   baseUrl: API_BASE,
@@ -116,6 +122,10 @@ const RivoraAPI = {
       return data;
     } catch (error) {
       console.warn(`[RivoraAPI] Error on ${options.method || "GET"} ${endpoint}:`, error.message);
+      if (error instanceof TypeError && /fetch/i.test(error.message)) {
+        const apiAddress = this.baseUrl || "the configured API";
+        throw new Error(`Can't reach the Rivora server at ${apiAddress}. Check that the API service is running and that the frontend API address is configured correctly.`);
+      }
       throw error;
     }
   },
