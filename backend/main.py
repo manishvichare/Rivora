@@ -13,6 +13,12 @@ from routes import businesses, resources, bookings, requests as requirements_rou
 
 Base.metadata.create_all(bind=engine)
 
+try:
+    from provision_admin import auto_provision_admin
+    auto_provision_admin()
+except Exception as _exc:
+    print(f"[Startup Warning] Could not auto-provision admin: {_exc}")
+
 app = FastAPI(
     title="Rivora API",
     description="B2B hospitality resource exchange — backend for Rivora",
