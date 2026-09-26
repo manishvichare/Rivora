@@ -52,11 +52,12 @@
     </header>
 
     <main class="app-content" id="main-content">
-      <div class="analytics-export-row">
-        <label for="analytics-export-month">Month</label>
-        <input class="analytics-month-input" id="analytics-export-month" type="month">
-        <button class="btn btn-primary btn-sm" id="sheet-csv-button" type="button">Export CSV</button>
-        <span class="analytics-export-status" id="analytics-export-status" role="status" aria-live="polite"></span>
+      <div class="sheet-sync-row">
+        <button class="btn btn-primary btn-sm sheet-sync-button" id="sheet-sync-button" type="button" aria-describedby="sheet-sync-status">
+          <span class="sheet-sync-spinner" aria-hidden="true"></span>
+          <span class="sheet-sync-button-label">Export / Sync to Cloud Sheet</span>
+        </button>
+        <span class="sheet-sync-status" id="sheet-sync-status" role="status" aria-live="polite"></span>
       </div>
 
       <div class="search-tabs" role="tablist">

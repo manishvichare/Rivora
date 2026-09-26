@@ -360,7 +360,83 @@ document.addEventListener('DOMContentLoaded', () => {
   initTestimonials();
   initNotifications();
   initZeus();
+  initPremiumMotion();
 });
+
+/**
+ * Adds a light visual entrance treatment to the existing page components.
+ * It does not change component content, events, or data/API behaviour.
+ */
+function initPremiumMotion() {
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+
+  const homePage = document.body.classList.contains('home-page');
+  const selector = homePage
+    ? [
+        'main > .section > .container > .section-head',
+        '#resources .category-card',
+        '#how-it-works .how-step',
+        '.match-feature > *',
+        '.section-dark > .container > .eyebrow-pill',
+        '.section-dark > .container > h2',
+        '.section-dark > .container > p:not(.impact-note)',
+        '.impact-item',
+        '.impact-note',
+        '#featured .result-card',
+        '#trust .trust-photo',
+        '#trust .trust-list > li',
+        '#testimonial-wrap',
+        '.final-cta',
+        '.site-footer .footer-col',
+      ].join(', ')
+    : '.app-content > *, .section, .panel, .kpi-card, .result-card, .category-card, .request-card-full, .listing-card, .zeus-panel, .detail-gallery';
+
+  const targets = [];
+  const isEligible = (el) => el instanceof HTMLElement && !el.closest('.modal') && !el.classList.contains('reveal-on-scroll');
+
+  if (!('IntersectionObserver' in window)) {
+    document.querySelectorAll(selector).forEach((el) => {
+      if (isEligible(el)) el.classList.add('reveal-on-scroll', 'is-revealed');
+    });
+    return;
+  }
+
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        entry.target.style.animationDelay = `${Math.min((targets.indexOf(entry.target) % 6) * 55, 275)}ms`;
+        entry.target.classList.add('is-revealed');
+      } else {
+        // Reset once an item leaves the viewport so its entrance animation
+        // plays again when the visitor scrolls back to this part of the page.
+        entry.target.classList.remove('is-revealed');
+      }
+    });
+  }, { threshold: 0.1, rootMargin: '0px 0px -36px' });
+
+  const register = (elements) => {
+    elements.forEach((el) => {
+      if (!isEligible(el)) return;
+      targets.push(el);
+      el.classList.add('reveal-on-scroll');
+      observer.observe(el);
+    });
+  };
+
+  register(Array.from(document.querySelectorAll(selector)));
+
+  // Homepage cards can be rendered after live resource data arrives.
+  // Observe those late additions so they receive the same entrance motion.
+  if (homePage) {
+    const liveContentObserver = new MutationObserver((mutations) => {
+      const added = mutations.flatMap((mutation) => Array.from(mutation.addedNodes))
+        .filter((node) => node instanceof HTMLElement)
+        .flatMap((node) => [node, ...node.querySelectorAll(selector)]);
+      register(added.filter((el) => el.matches(selector)));
+    });
+    liveContentObserver.observe(document.querySelector('main'), { childList: true, subtree: true });
+  }
+}
 
 function escapeHtml(str) {
   const div = document.createElement('div');
@@ -939,23 +1015,7 @@ function initLoginPage() {
     if (window.RivoraAPI) {
       try {
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending verification code…'; }
-
-        // Show a "waking up" message after 8s (Render cold-start on free tier)
-        let wakeTimer = setTimeout(() => {
-          if (submitBtn && submitBtn.disabled) {
-            submitBtn.textContent = '⏳ Server is waking up, please wait…';
-          }
-        }, 8000);
-        // After 25s, reassure user it's still working
-        let stillWorkingTimer = setTimeout(() => {
-          if (submitBtn && submitBtn.disabled) {
-            submitBtn.textContent = '🔄 Still connecting, almost there…';
-          }
-        }, 25000);
-
         const res = await RivoraAPI.login(email, password);
-        clearTimeout(wakeTimer);
-        clearTimeout(stillWorkingTimer);
 
         // If OTP is required (standard secure flow)
         if (res && res.require_otp && res.session_id) {
@@ -984,13 +1044,6 @@ function initLoginPage() {
           }
 
           startResendCooldown(res.resend_cooldown_seconds || 60);
-
-          // Demo mode: auto-fill and auto-submit the OTP instantly
-          if (res.demo_mode && res.demo_otp && otpInput && otpForm) {
-            otpInput.value = res.demo_otp;
-            setTimeout(() => otpForm.requestSubmit(), 300);
-          }
-
           return;
         }
 
@@ -1280,11 +1333,11 @@ function initResourceForm() {
 
     const imageUrl = uploadedUrls.length > 0 ? uploadedUrls[0] : null;
 
-    // Step 2 — build the listing card with the real Cloudinary URL (or illustration)
+    // Step 2 — build the listing card with the uploaded photo or a real-photo fallback.
     const piClass = THUMB_ILLUSTRATIONS[type] || 'pi-hotel';
     const thumbHtml = imageUrl
       ? `<div class="listing-thumb" style="background-image:url('${imageUrl}');background-size:cover;background-position:center"></div>`
-      : `<div class="listing-thumb photo-illustration ${piClass}">${categoryScene(piClass)}</div>`;
+      : `<div class="listing-thumb resource-photo">${categoryScene(piClass, name)}</div>`;
 
     const card = document.createElement('article');
     card.className = 'listing-card clickable-listing-card';
@@ -1373,7 +1426,7 @@ function initResourceForm() {
           const piClass = THUMB_ILLUSTRATIONS[typeName] || 'pi-hotel';
           const thumbHtml = r.image_url
             ? `<div class="listing-thumb" style="background-image:url('${r.image_url}');background-size:cover;background-position:center"></div>`
-            : `<div class="listing-thumb photo-illustration ${piClass}">${categoryScene(piClass)}</div>`;
+            : `<div class="listing-thumb resource-photo">${categoryScene(piClass, r.name)}</div>`;
           const card = document.createElement('article');
           card.className = 'listing-card clickable-listing-card';
           card.setAttribute('data-resource-id', r.id);
@@ -1604,7 +1657,7 @@ function renderProviderRequestRow(b, allIncoming) {
         acceptBtn.disabled = true;
         acceptBtn.textContent = 'Accepting…';
         try {
-          await RivoraAPI.confirmBooking(b.id, b.latest_offer_amount || b.agreed_price || b.requested_price || 50000);
+          await RivoraAPI.confirmBooking(b.id);
           b.status = 'confirmed';
           setBadge(row.querySelector('.request-badge'), t('status.confirmed'), STATUS_BADGE.confirmed);
           actionsWrap.innerHTML = renderActions();
@@ -1714,20 +1767,10 @@ const RESOURCE_TYPE_KEYS = {
 
 const VISUAL_CLASS = { Space: 'pi-hotel', Kitchen: 'pi-kitchen', Vehicle: 'pi-vehicle', 'AV Equipment': 'pi-av', Furniture: 'pi-furniture', Staff: 'pi-staff', Parking: 'pi-parking' };
 
-const CATEGORY_SCENES = {
-  'pi-hotel': `<circle cx="255" cy="26" r="24" fill="rgba(248, 246, 239,0.35)"/><circle cx="255" cy="26" r="13" fill="rgba(255,250,235,0.65)"/><rect x="90" y="30" width="120" height="90" fill="rgba(24, 59, 67,0.28)"/><rect x="103" y="42" width="12" height="12" fill="rgba(255,240,210,0.4)"/><rect x="123" y="42" width="12" height="12" fill="rgba(255,240,210,0.22)"/><rect x="143" y="42" width="12" height="12" fill="rgba(255,240,210,0.4)"/><rect x="163" y="42" width="12" height="12" fill="rgba(255,240,210,0.22)"/><rect x="183" y="42" width="12" height="12" fill="rgba(255,240,210,0.4)"/><rect x="103" y="64" width="12" height="12" fill="rgba(255,240,210,0.22)"/><rect x="123" y="64" width="12" height="12" fill="rgba(255,240,210,0.4)"/><rect x="143" y="64" width="12" height="12" fill="rgba(255,240,210,0.22)"/><rect x="163" y="64" width="12" height="12" fill="rgba(255,240,210,0.4)"/><rect x="183" y="64" width="12" height="12" fill="rgba(255,240,210,0.22)"/><rect x="138" y="96" width="24" height="24" fill="rgba(24, 59, 67,0.4)"/><ellipse cx="150" cy="120" rx="90" ry="6" fill="rgba(24, 59, 67,0.14)"/>`,
-  'pi-banquet': `<path d="M20 24 Q150 -14 280 24" fill="none" stroke="rgba(24, 59, 67,0.2)" stroke-width="1.8"/><circle cx="60" cy="18" r="3" fill="rgba(255,235,180,0.9)"/><circle cx="120" cy="4" r="3" fill="rgba(255,235,180,0.9)"/><circle cx="180" cy="4" r="3" fill="rgba(255,235,180,0.9)"/><circle cx="240" cy="18" r="3" fill="rgba(255,235,180,0.9)"/><ellipse cx="100" cy="86" rx="46" ry="26" fill="rgba(24, 59, 67,0.28)"/><ellipse cx="100" cy="74" rx="40" ry="16" fill="rgba(248, 246, 239,0.14)"/><ellipse cx="205" cy="86" rx="46" ry="26" fill="rgba(24, 59, 67,0.28)"/><ellipse cx="205" cy="74" rx="40" ry="16" fill="rgba(248, 246, 239,0.12)"/><ellipse cx="150" cy="128" rx="100" ry="6" fill="rgba(24, 59, 67,0.14)"/>`,
-  'pi-vehicle': `<path d="M20 100 h260" stroke="rgba(24, 59, 67,0.16)" stroke-width="2"/><path d="M40 100 h30 M95 100 h30 M150 100 h30" stroke="rgba(248, 246, 239,0.4)" stroke-width="2.4" stroke-dasharray="14 10"/><path d="M55 100 v-22 h150 v-26 h-48 l-16 -22 h-96 l-22 22 h-44 v48 z" fill="rgba(24, 59, 67,0.28)"/><path d="M162 52 l10 22 h-62 l6 -22 z" fill="rgba(210,230,242,0.4)"/><circle cx="100" cy="104" r="16" fill="rgba(24, 59, 67,0.32)"/><circle cx="100" cy="104" r="6" fill="rgba(248, 246, 239,0.4)"/><circle cx="215" cy="104" r="16" fill="rgba(24, 59, 67,0.32)"/><circle cx="215" cy="104" r="6" fill="rgba(248, 246, 239,0.4)"/><ellipse cx="150" cy="130" rx="110" ry="6" fill="rgba(24, 59, 67,0.14)"/>`,
-  'pi-kitchen': `<path d="M115 34 q4 -14 10 0" stroke="rgba(248, 246, 239,0.5)" stroke-width="2" fill="none"/><path d="M130 26 q5 -16 11 0" stroke="rgba(248, 246, 239,0.4)" stroke-width="2" fill="none"/><rect x="60" y="22" width="180" height="20" fill="rgba(24, 59, 67,0.24)"/><rect x="72" y="74" width="30" height="28" fill="none" stroke="rgba(24, 59, 67,0.26)" stroke-width="2.4"/><rect x="112" y="74" width="30" height="28" fill="none" stroke="rgba(24, 59, 67,0.26)" stroke-width="2.4"/><rect x="152" y="74" width="30" height="28" fill="none" stroke="rgba(24, 59, 67,0.26)" stroke-width="2.4"/><rect x="192" y="74" width="30" height="28" fill="none" stroke="rgba(24, 59, 67,0.26)" stroke-width="2.4"/><rect x="60" y="106" width="180" height="26" fill="rgba(24, 59, 67,0.2)"/>`,
-  'pi-furniture': `<ellipse cx="150" cy="118" rx="110" ry="8" fill="rgba(24, 59, 67,0.15)"/><path d="M95 55 h70 v40 h-70 z" fill="rgba(24, 59, 67,0.3)"/><path d="M90 95 h80 v16 h-80 z" fill="rgba(24, 59, 67,0.34)"/><path d="M95 111 v8 M165 111 v8" stroke="rgba(24, 59, 67,0.34)" stroke-width="5" stroke-linecap="round"/><rect x="205" y="66" width="28" height="40" fill="none" stroke="rgba(24, 59, 67,0.26)" stroke-width="2.4"/><path d="M212 66 l7 -14 7 14 z" fill="rgba(24, 59, 67,0.28)"/>`,
-  'pi-av': `<rect x="105" y="30" width="110" height="60" rx="4" fill="rgba(24, 59, 67,0.3)"/><rect x="115" y="40" width="90" height="40" fill="rgba(248, 246, 239,0.14)"/><path d="M125 70 l16 -14 12 10 20 -22" stroke="rgba(248, 246, 239,0.4)" stroke-width="2.4" fill="none"/><rect x="55" y="55" width="28" height="50" rx="3" fill="rgba(24, 59, 67,0.3)"/><circle cx="69" cy="68" r="8" fill="none" stroke="rgba(24, 59, 67,0.3)" stroke-width="2.2"/><rect x="240" y="55" width="28" height="50" rx="3" fill="rgba(24, 59, 67,0.3)"/><circle cx="254" cy="68" r="8" fill="none" stroke="rgba(24, 59, 67,0.3)" stroke-width="2.2"/><ellipse cx="150" cy="118" rx="105" ry="6" fill="rgba(24, 59, 67,0.14)"/>`,
-  'pi-parking': `<line x1="90" y1="20" x2="90" y2="128" stroke="rgba(24, 59, 67,0.18)" stroke-width="2.4"/><line x1="150" y1="20" x2="150" y2="128" stroke="rgba(24, 59, 67,0.18)" stroke-width="2.4"/><line x1="210" y1="20" x2="210" y2="128" stroke="rgba(24, 59, 67,0.18)" stroke-width="2.4"/><rect x="98" y="40" width="46" height="28" rx="7" fill="rgba(24, 59, 67,0.28)"/><circle cx="108" cy="68" r="4" fill="rgba(24, 59, 67,0.38)"/><circle cx="134" cy="68" r="4" fill="rgba(24, 59, 67,0.38)"/><rect x="158" y="70" width="46" height="28" rx="7" fill="rgba(24, 59, 67,0.28)"/><circle cx="168" cy="98" r="4" fill="rgba(24, 59, 67,0.38)"/><circle cx="194" cy="98" r="4" fill="rgba(24, 59, 67,0.38)"/>`,
-};
-
 const CATEGORY_UNSPLASH_MAP = {
   'pi-hotel': 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=1200&q=80',
   'pi-banquet': 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?auto=format&fit=crop&w=1200&q=80',
-  'pi-vehicle': 'https://images.unsplash.com/photo-1586191582156-f4041b9c9f45?auto=format&fit=crop&w=1200&q=80',
+  'pi-vehicle': 'https://images.unsplash.com/photo-1492144534655-ae79c964c9d7?auto=format&fit=crop&w=1200&q=80',
   'pi-kitchen': 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?auto=format&fit=crop&w=1200&q=80',
   'pi-parking': 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=1200&q=80',
   'pi-furniture': 'https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80',
@@ -2024,7 +2067,7 @@ function renderResults(list, requirement) {
       : categoryScene(piClass, r.name);
 
     card.innerHTML = `
-      <div class="result-visual photo-illustration ${piClass}" data-resource-id="${r.id}">
+      <div class="result-visual resource-photo" data-resource-id="${r.id}">
         <span class="badge ${badgeClass}"><i></i>${t('common.percentMatch', { pct: I18N.num(r.score) })}</span>
         <button class="result-fav ${isFav ? 'is-fav' : ''}" data-fav-id="${r.id}" title="Save" type="button">♥</button>
         ${r.provider_verified ? '<span class="verified-chip" style="background:#3D8067; color:#F8F6EF; font-weight:700; border-color:#3D8067;">Verified Business</span>' : `<span class="verified-chip">${escapeHtml(t('status.verified'))}</span>`}
@@ -2340,7 +2383,7 @@ async function initResourceDetails() {
   }
 
   const galleryEl = document.getElementById('detail-gallery');
-  const gallerySvg = document.getElementById('detail-gallery-svg');
+  const galleryFallbackImage = document.getElementById('detail-gallery-fallback');
   const prevBtn = document.getElementById('gallery-prev');
   const nextBtn = document.getElementById('gallery-next');
   const counterEl = document.getElementById('detail-gallery-counter');
@@ -2372,7 +2415,7 @@ async function initResourceDetails() {
       galleryEl.style.backgroundImage = `url('${currentPhoto}')`;
       galleryEl.style.backgroundSize = 'cover';
       galleryEl.style.backgroundPosition = 'center';
-      if (gallerySvg) gallerySvg.style.display = 'none';
+      if (galleryFallbackImage) galleryFallbackImage.style.display = 'none';
 
       if (galleryPhotos.length > 1) {
         if (prevBtn) prevBtn.style.display = 'flex';
@@ -2400,10 +2443,10 @@ async function initResourceDetails() {
         });
       }
     } else {
-      galleryEl.style.backgroundImage = 'none';
-      if (gallerySvg) gallerySvg.style.display = 'block';
       const piClass = THUMB_ILLUSTRATIONS[currentResource.type ? (currentResource.type.charAt(0).toUpperCase() + currentResource.type.slice(1)) : 'Space'] || 'pi-hotel';
-      galleryEl.className = `detail-gallery photo-illustration ${piClass}`;
+      galleryEl.style.backgroundImage = `url('${CATEGORY_UNSPLASH_MAP[piClass] || CATEGORY_UNSPLASH_MAP['pi-hotel']}')`;
+      if (galleryFallbackImage) galleryFallbackImage.style.display = 'none';
+      galleryEl.className = 'detail-gallery resource-photo';
       if (prevBtn) prevBtn.style.display = 'none';
       if (nextBtn) nextBtn.style.display = 'none';
       if (counterEl) counterEl.style.display = 'none';
@@ -2806,9 +2849,7 @@ async function initResourceDetails() {
   if (detailMapEl && typeof L !== 'undefined') {
     const pos = { lat: 19.1197 + ((currentResource.id * 7) % 20) * 0.004, lng: 72.8468 + ((currentResource.id * 11) % 20) * 0.004 };
     const detailMap = L.map(detailMapEl, { scrollWheelZoom: false }).setView([pos.lat, pos.lng], 14);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 18, attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(detailMap);
+    addMapBaseLayer(detailMap);
     const icon = L.divIcon({ className: '', html: '<div class="map-marker map-marker--available"><span>R</span></div>', iconSize: [28, 28], iconAnchor: [14, 28] });
     L.marker([pos.lat, pos.lng], { icon }).addTo(detailMap).bindPopup(`<strong>${escapeHtml(currentResource.name)}</strong><br>${escapeHtml(currentResource.location || 'Mumbai')}`).openPopup();
     setTimeout(() => detailMap.invalidateSize(), 200);
@@ -3198,7 +3239,7 @@ async function initResourceDetails() {
             const piClass = THUMB_ILLUSTRATIONS[typeName] || 'pi-hotel';
             const visual = sim.image_url
               ? `<img src="${escapeHtml(sim.image_url)}" alt="${escapeHtml(sim.name)}" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">`
-              : `<div class="photo-illustration ${piClass}" style="height:96px;">${categoryScene(piClass)}</div>`;
+              : `<div class="resource-photo" style="height:96px;">${categoryScene(piClass, sim.name)}</div>`;
 
             const card = document.createElement('article');
             card.className = 'category-card';
@@ -3440,7 +3481,7 @@ function buildRequestCard(r, onRefresh) {
       if (window.RivoraAPI && RivoraAPI.isAuthenticated() && newStatus && typeof r.id === 'number') {
         try {
           if (action === 'accept') {
-            await RivoraAPI.confirmBooking(r.id, r.priceNum || r.agreed_price || 50000);
+            await RivoraAPI.confirmBooking(r.id);
           } else {
             await RivoraAPI.updateBookingStatus(r.id, { status: newStatus });
           }
@@ -3498,7 +3539,7 @@ function buildFooterActions(r) {
     return `<button class="btn-mini btn-mini--accept" data-action="complete">${escapeHtml(t('button.markCompleted'))}</button><button class="btn-mini" data-action="invoice" type="button" style="margin-left:0.35rem;">View Invoice</button>`;
   }
   if (r.status === 'confirmed' && r.direction === 'sent') {
-    return `<button class="btn-mini btn-mini--accept" data-action="pay" style="background:#3D8067; border-color:#3D8067; font-weight:700;">Pay securely</button><button class="btn-mini" data-action="invoice" type="button" style="margin-left:0.35rem;">View invoice</button>`;
+    return `<button class="btn-mini btn-mini--accept" data-action="pay" style="background:#3D8067; border-color:#3D8067; color:#fff; font-weight:700;">Pay securely</button><button class="btn-mini" data-action="invoice" type="button" style="margin-left:0.35rem;">View invoice</button>`;
   }
   if (r.status === 'confirmed') {
     return `<span class="request-done">${escapeHtml(t('requests.awaitingCompletion'))}</span><button class="btn-mini" data-action="invoice" type="button" style="margin-left:0.5rem;">View Invoice</button>`;
@@ -3548,13 +3589,8 @@ async function initAnalyticsPage() {
   const earningsChart = document.getElementById('earnings-chart');
   if (!earningsChart) return;
 
-  const csvButton = document.getElementById('sheet-csv-button');
-  const exportMonth = document.getElementById('analytics-export-month');
-  if (exportMonth && !exportMonth.value) {
-    const now = new Date();
-    exportMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  }
-  if (csvButton) csvButton.addEventListener('click', downloadAnalyticsCsv);
+  const syncButton = document.getElementById('sheet-sync-button');
+  if (syncButton) syncButton.addEventListener('click', syncAnalyticsToSheet);
 
   await refreshDashboardAndAnalytics();
 
@@ -3579,50 +3615,49 @@ async function initAnalyticsPage() {
   });
 }
 
-async function downloadAnalyticsCsv() {
-  const button = document.getElementById('sheet-csv-button');
-  const status = document.getElementById('analytics-export-status');
-  if (!button || !status) return;
+async function syncAnalyticsToSheet() {
+  const button = document.getElementById('sheet-sync-button');
+  const label = button?.querySelector('.sheet-sync-button-label');
+  const status = document.getElementById('sheet-sync-status');
+  if (!button || !label || !status) return;
   if (!RivoraAPI.isAuthenticated()) {
     status.dataset.state = 'error';
-    status.textContent = 'Sign in to export your financial records.';
+    status.textContent = 'Sign in to sync your financial records.';
     return;
   }
-  const month = document.getElementById('analytics-export-month')?.value;
-  if (!month) {
-    status.dataset.state = 'error';
-    status.textContent = 'Choose a month to export.';
-    return;
-  }
+
   button.disabled = true;
-  button.textContent = 'Preparing CSV…';
+  button.classList.add('is-loading');
+  button.classList.remove('is-success', 'is-error');
+  label.textContent = 'Syncing…';
   status.dataset.state = 'loading';
-  status.textContent = 'Preparing your monthly financial export.';
+  status.textContent = 'Sending this month’s invoice records to Google Sheets.';
+
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   try {
-    const response = await fetch(`${RivoraAPI.baseUrl}/api/analytics/export-csv?month=${month}`, {
+    const response = await fetch(`${RivoraAPI.baseUrl}/api/analytics/sync-sheet`, {
+      method: 'POST',
       headers: RivoraAPI.getHeaders(true),
+      body: JSON.stringify({ month }),
     });
+    const result = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const result = await response.json().catch(() => ({}));
-      throw new Error(typeof result.detail === 'string' ? result.detail : 'CSV export failed.');
+      const detail = typeof result.detail === 'string' ? result.detail : 'Google Sheets sync failed.';
+      throw new Error(detail);
     }
-    const blob = await response.blob();
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `rivora-financials-${month}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    URL.revokeObjectURL(url);
+    button.classList.add('is-success');
+    label.textContent = '✓ Synced to Cloud Sheet';
     status.dataset.state = 'success';
-    status.textContent = `CSV downloaded for ${month}.`;
+    status.textContent = result.message || `Synced ${result.appended || 0} row(s).`;
   } catch (error) {
+    button.classList.add('is-error');
+    label.textContent = 'Retry Cloud Sheet Sync';
     status.dataset.state = 'error';
-    status.textContent = error.message || 'CSV export failed.';
+    status.textContent = error.message || 'Could not sync to Google Sheets.';
   } finally {
+    button.classList.remove('is-loading');
     button.disabled = false;
-    button.textContent = 'Export CSV';
   }
 }
 
@@ -3739,6 +3774,8 @@ async function initProfilePage() {
   const form = document.getElementById('profile-form');
   if (!form) return;
 
+  initProfileReviewForm();
+
   if (window.RivoraAPI && RivoraAPI.isAuthenticated()) {
     try {
       const user = await RivoraAPI.getMe();
@@ -3832,6 +3869,147 @@ async function initProfilePage() {
   });
 }
 
+async function initProfileReviewForm() {
+  const form = document.getElementById('profile-review-form');
+  const bookingSelect = document.getElementById('review-booking-select');
+  const ratingSelect = document.getElementById('review-rating-select');
+  const commentInput = document.getElementById('review-comment-input');
+  const submitButton = document.getElementById('review-submit-button');
+  const status = document.getElementById('review-form-status');
+  const reviewsList = document.getElementById('profile-reviews-list');
+  if (!form || !bookingSelect) return;
+  if (submitButton) submitButton.disabled = true;
+
+  let completedBookings = [];
+  let submittedReviews = [];
+  const showStatus = (message, isError = false) => {
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle('is-error', isError);
+  };
+
+  const renderRecentReviews = () => {
+    if (!reviewsList) return;
+    reviewsList.innerHTML = '';
+    if (!submittedReviews.length) {
+      const emptyState = document.createElement('p');
+      emptyState.className = 'calendar-hint';
+      emptyState.textContent = 'You have not submitted any reviews yet.';
+      reviewsList.appendChild(emptyState);
+      return;
+    }
+
+    const bookingsById = new Map(completedBookings.map(booking => [String(booking.id), booking]));
+    submittedReviews.slice(0, 10).forEach(review => {
+      const booking = bookingsById.get(String(review.booking_id));
+      const resourceName = booking?.resource_name || booking?.resource?.name || 'Completed booking';
+      const item = document.createElement('div');
+      item.className = 'review-item';
+      const head = document.createElement('div');
+      head.className = 'review-head';
+      const author = document.createElement('span');
+      author.className = 'review-author';
+      author.textContent = 'Your review · ' + resourceName;
+      const rating = document.createElement('span');
+      rating.className = 'review-rating';
+      rating.textContent = String(review.rating) + '.0 ★';
+      const text = document.createElement('p');
+      text.className = 'review-text';
+      text.textContent = review.comment || 'No written feedback provided.';
+      head.append(author, rating);
+      item.append(head, text);
+      reviewsList.appendChild(item);
+    });
+  };
+
+  if (!window.RivoraAPI || !RivoraAPI.isAuthenticated()) {
+    bookingSelect.innerHTML = '<option value="">Sign in to review a booking</option>';
+    bookingSelect.disabled = true;
+    if (submitButton) submitButton.disabled = true;
+    showStatus('Sign in to submit a review.', true);
+    if (reviewsList) reviewsList.textContent = 'Sign in to view your submitted reviews.';
+    return;
+  }
+
+  try {
+    const response = await RivoraAPI.getMyBookings();
+    completedBookings = (Array.isArray(response) ? response : [])
+      .filter(booking => String(booking.status || '').toLowerCase() === 'completed');
+    bookingSelect.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = completedBookings.length ? 'Select a completed booking' : 'No completed bookings available';
+    bookingSelect.appendChild(placeholder);
+
+    completedBookings.forEach(booking => {
+      const option = document.createElement('option');
+      option.value = String(booking.id);
+      const resourceName = booking.resource_name || booking.resource?.name || 'Booking';
+      const partnerName = booking.counterpart || booking.provider_name || booking.seeker_name;
+      option.textContent = resourceName + (partnerName ? ' · ' + partnerName : '') + ' · #' + booking.id;
+      bookingSelect.appendChild(option);
+    });
+    bookingSelect.disabled = completedBookings.length === 0;
+    if (submitButton) submitButton.disabled = completedBookings.length === 0;
+    if (!completedBookings.length) showStatus('A review can be submitted after a booking is completed.');
+  } catch (error) {
+    bookingSelect.innerHTML = '<option value="">Could not load completed bookings</option>';
+    bookingSelect.disabled = true;
+    if (submitButton) submitButton.disabled = true;
+    showStatus(error.message || 'Could not load completed bookings.', true);
+  }
+
+  try {
+    const reviews = await RivoraAPI.getMyReviews();
+    submittedReviews = Array.isArray(reviews) ? reviews : [];
+    const reviewedBookingIds = new Set(submittedReviews.map(review => String(review.booking_id)));
+    bookingSelect.querySelectorAll('option').forEach(option => {
+      if (option.value && reviewedBookingIds.has(option.value)) option.remove();
+    });
+    if (completedBookings.length && !bookingSelect.querySelector('option[value]:not([value=""])')) {
+      bookingSelect.innerHTML = '<option value="">All completed bookings have been reviewed</option>';
+      bookingSelect.disabled = true;
+      if (submitButton) submitButton.disabled = true;
+    }
+    renderRecentReviews();
+  } catch (error) {
+    if (reviewsList) reviewsList.textContent = error.message || 'Could not load your recent reviews.';
+  }
+
+  form.addEventListener('submit', async event => {
+    event.preventDefault();
+    const bookingId = Number(bookingSelect.value);
+    const rating = Number(ratingSelect?.value);
+    const comment = commentInput?.value.trim() || '';
+    if (!bookingId || !rating || !comment) {
+      showStatus('Choose a completed booking, select a rating, and write your feedback.', true);
+      return;
+    }
+
+    if (submitButton) { submitButton.disabled = true; submitButton.textContent = 'Submitting…'; }
+    showStatus('');
+    try {
+      const savedReview = await RivoraAPI.createReview({ booking_id: bookingId, rating, comment });
+      submittedReviews = [savedReview, ...submittedReviews.filter(review => review.booking_id !== bookingId)];
+      renderRecentReviews();
+      showStatus('Thanks — your review and feedback have been submitted.');
+      form.reset();
+      const reviewedOption = bookingSelect.querySelector('option[value="' + bookingId + '"]');
+      if (reviewedOption) reviewedOption.remove();
+      if (!bookingSelect.querySelector('option[value]:not([value=""])')) {
+        bookingSelect.innerHTML = '<option value="">All available bookings have been reviewed</option>';
+        bookingSelect.disabled = true;
+      }
+    } catch (error) {
+      showStatus(error.message || 'Could not submit your review.', true);
+    } finally {
+      if (submitButton) {
+        submitButton.disabled = bookingSelect.disabled;
+        submitButton.textContent = 'Submit review';
+      }
+    }
+  });
+}
 /* =========================================================
    VERIFICATION & TRUST SYSTEM (Seeker, Provider & Admin)
 ========================================================= */
@@ -3843,7 +4021,6 @@ async function initProfileVerification(user) {
   const verifiedBadge = document.querySelector('.profile-verified');
   const role = (user.role || '').toLowerCase();
   const isDev = role === 'developer';
-  const isAdmin = role === 'admin' || user.is_admin || isDev;
   const isProvider = role === 'provider' || isDev || (!role || role === 'business' || role === 'hotel');
 
   // 1. PROVIDER VERIFICATION FLOW
@@ -3944,143 +4121,6 @@ async function initProfileVerification(user) {
       });
     } catch (e) {
       console.warn('[RivoraAPI] Could not fetch seeker verification:', e);
-    }
-  }
-
-  // 3. ADMIN REVIEW & AUDIT CONSOLE
-  if (isAdmin) {
-    let adminSection = document.getElementById('admin-review-section');
-    if (!adminSection) {
-      adminSection = document.createElement('section');
-      adminSection.id = 'admin-review-section';
-      adminSection.className = 'panel';
-      adminSection.style.marginTop = '1.5rem';
-      document.getElementById('main-content')?.appendChild(adminSection);
-    }
-
-    try {
-      const [docs, flags, logs] = await Promise.all([
-        RivoraAPI.getAdminProviderDocuments(),
-        RivoraAPI.getAdminDuplicateFlags(),
-        RivoraAPI.getAdminSecurityLogs()
-      ]);
-
-      adminSection.innerHTML = `
-        <div class="panel-head">
-          <h2 class="panel-title">Admin Trust &amp; Safety Review</h2>
-        </div>
-
-        <div style="margin-bottom: 1.5rem;">
-          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.88rem; color: #183B43;">Pending Provider Documents (${docs.length})</h4>
-          ${docs.length ? `
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Business</th>
-                  <th>Document Type</th>
-                  <th>Masked Identifier</th>
-                  <th>Status</th>
-                  <th style="text-align:right;">Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${docs.map((d) => `
-                  <tr>
-                    <td><strong>${escapeHtml(d.business_name || 'Provider')}</strong></td>
-                    <td>${escapeHtml(d.doc_type.toUpperCase())}</td>
-                    <td><code>${escapeHtml(d.doc_number_masked || '—')}</code></td>
-                    <td><span class="badge badge-${d.status === 'approved' ? 'teal' : (d.status === 'rejected' ? 'rose' : 'amber')}">${escapeHtml(d.status)}</span></td>
-                    <td style="text-align:right;">
-                      ${d.status === 'pending' ? `
-                        <div class="admin-action-btns" style="justify-content:flex-end;">
-                          <button type="button" class="btn-admin-approve" data-doc-id="${d.id}">Approve</button>
-                          <button type="button" class="btn-admin-reject" data-doc-id="${d.id}">Reject</button>
-                        </div>
-                      ` : `—`}
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          ` : `<p style="font-size: 0.8rem; color: #6C8582; margin: 0;">No documents awaiting review.</p>`}
-        </div>
-
-        <div style="margin-bottom: 1.5rem;">
-          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.88rem; color: #183B43;">Duplicate Account Detection Flags (${flags.length})</h4>
-          ${flags.length ? `
-            <table class="admin-table">
-              <thead>
-                <tr>
-                  <th>Target Account</th>
-                  <th>Flag Reason</th>
-                  <th>Severity</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${flags.map((f) => `
-                  <tr>
-                    <td>Account #${f.duplicate_user_id} (vs #${f.primary_user_id})</td>
-                    <td>${escapeHtml(f.flag_reason)}</td>
-                    <td><span class="badge badge-${f.severity === 'high' ? 'rose' : 'amber'}">${escapeHtml(f.severity)}</span></td>
-                    <td>${escapeHtml(f.status)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          ` : `<p style="font-size: 0.8rem; color: #6C8582; margin: 0;">Zero suspicious duplicate accounts detected.</p>`}
-        </div>
-
-        <div>
-          <h4 style="margin: 0 0 0.5rem 0; font-size: 0.88rem; color: #183B43;">Recent Security Audit Logs (${logs.length})</h4>
-          ${logs.length ? `
-            <div style="max-height: 200px; overflow-y: auto; background: #EEF2EA; border-radius: 8px; border: 1px solid #DDE6DE; font-size: 0.76rem; padding: 0.5rem;">
-              ${logs.slice(0, 15).map((l) => `
-                <div style="padding: 0.35rem 0.5rem; border-bottom: 1px solid #DDE6DE; display: flex; justify-content: space-between;">
-                  <div>
-                    <strong>${escapeHtml(l.event_type)}</strong>: ${escapeHtml(l.details || '')}
-                  </div>
-                  <span style="color: #8D9D97;">${new Date(l.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
-                </div>
-              `).join('')}
-            </div>
-          ` : `<p style="font-size: 0.8rem; color: #6C8582; margin: 0;">No security events recorded.</p>`}
-        </div>
-      `;
-
-      // Approve / Reject click listeners
-      adminSection.querySelectorAll('.btn-admin-approve').forEach((b) => {
-        b.addEventListener('click', async () => {
-          const docId = parseInt(b.dataset.docId, 10);
-          b.disabled = true;
-          try {
-            await RivoraAPI.reviewProviderDocument(docId, { action: 'approve' });
-            alert('Document approved successfully.');
-            await initProfileVerification(user);
-          } catch (err) {
-            alert(err.message || 'Approval failed');
-          }
-        });
-      });
-
-      adminSection.querySelectorAll('.btn-admin-reject').forEach((b) => {
-        b.addEventListener('click', async () => {
-          const docId = parseInt(b.dataset.docId, 10);
-          const reason = prompt('Please enter rejection reason:');
-          if (!reason) return;
-          b.disabled = true;
-          try {
-            await RivoraAPI.reviewProviderDocument(docId, { action: 'reject', rejection_reason: reason });
-            alert('Document marked as rejected.');
-            await initProfileVerification(user);
-          } catch (err) {
-            alert(err.message || 'Rejection failed');
-          }
-        });
-      });
-
-    } catch (err) {
-      console.warn('Admin review load error:', err);
     }
   }
 }
@@ -6232,12 +6272,12 @@ async function updateChatModalData() {
   const r = activeChatRequest;
 
   // Fetch live fresh booking details from database
-  let b = r;
+  let b = { ...(r.rawBooking || {}), ...r };
   if (window.RivoraAPI && RivoraAPI.isAuthenticated() && typeof r.id === 'number') {
     try {
       const freshBooking = await RivoraAPI.getBooking(r.id);
       if (freshBooking) {
-        b = { ...r, ...freshBooking };
+        b = { ...(r.rawBooking || {}), ...r, ...freshBooking };
         activeChatRequest = b;
       }
     } catch (e) {
@@ -6262,10 +6302,19 @@ async function updateChatModalData() {
   if (statusText) statusText.textContent = label;
 
   // 4 Negotiation Stats
-  const currentPrice = b.current_price || parseFloat(b.priceNum || b.price || 50000);
-  const seekerOffer = b.seeker_offer !== undefined ? b.seeker_offer : (b.requested_price || currentPrice);
-  const counterOffer = b.provider_counter_offer;
-  const activeOffer = b.active_offer || b.agreed_price || counterOffer || seekerOffer || currentPrice;
+  const amount = (...values) => {
+    for (const value of values) {
+      if (value !== null && value !== undefined && value !== '' && Number.isFinite(Number(value))) {
+        return Number(value);
+      }
+    }
+    return null;
+  };
+  const displayMoney = value => value === null ? '—' : I18N.money(value);
+  const currentPrice = amount(b.current_price, b.rawBooking?.current_price, b.price_per_unit, b.rawBooking?.price_per_unit);
+  const seekerOffer = amount(b.seeker_offer, b.requested_price, b.rawBooking?.requested_price, currentPrice);
+  const counterOffer = amount(b.provider_counter_offer, b.rawBooking?.provider_counter_offer);
+  const activeOffer = amount(b.active_offer, b.latest_offer_amount, b.agreed_price, counterOffer, seekerOffer, currentPrice);
 
   const currentPriceEl = document.getElementById('chat-nego-current-price');
   const seekerOfferEl = document.getElementById('chat-nego-seeker-offer');
@@ -6273,10 +6322,10 @@ async function updateChatModalData() {
   const activeOfferEl = document.getElementById('chat-nego-active-offer');
   const statusPill = document.getElementById('chat-nego-status-pill');
 
-  if (currentPriceEl) currentPriceEl.textContent = I18N.money(currentPrice);
-  if (seekerOfferEl) seekerOfferEl.textContent = seekerOffer ? I18N.money(seekerOffer) : '—';
-  if (counterOfferEl) counterOfferEl.textContent = counterOffer ? I18N.money(counterOffer) : '—';
-  if (activeOfferEl) activeOfferEl.textContent = I18N.money(activeOffer);
+  if (currentPriceEl) currentPriceEl.textContent = displayMoney(currentPrice);
+  if (seekerOfferEl) seekerOfferEl.textContent = displayMoney(seekerOffer);
+  if (counterOfferEl) counterOfferEl.textContent = displayMoney(counterOffer);
+  if (activeOfferEl) activeOfferEl.textContent = displayMoney(activeOffer);
 
   // Negotiation Status Pill
   const negoStatus = b.negotiation_status || (curStatus === 'confirmed' ? 'Agreed & Confirmed' : (curStatus === 'negotiating' ? 'Counter Offer Pending' : 'Pending'));
@@ -6293,10 +6342,10 @@ async function updateChatModalData() {
   const timelineChips = document.getElementById('chat-nego-timeline-chips');
   if (timelineChips) {
     const historyList = b.negotiation_history || [
-      `Original Price (${I18N.money(currentPrice)})`,
-      `Seeker Offer (${I18N.money(seekerOffer)})`,
-      ...(counterOffer ? [`Provider Counter (${I18N.money(counterOffer)})`] : []),
-      `Active Offer: ${I18N.money(activeOffer)}`
+      `Original Price (${displayMoney(currentPrice)})`,
+      `Seeker Offer (${displayMoney(seekerOffer)})`,
+      ...(counterOffer !== null ? [`Provider Counter (${displayMoney(counterOffer)})`] : []),
+      `Active Offer: ${displayMoney(activeOffer)}`
     ];
 
     timelineChips.innerHTML = historyList.map((item, idx) => {
@@ -6334,8 +6383,9 @@ async function updateChatModalData() {
   const counterBtn = document.getElementById('btn-chat-counter');
   const confirmBtn = document.getElementById('btn-chat-confirm');
 
-  if (negoInput && (!negoInput.value || negoInput.value === '')) {
-    negoInput.value = Math.max(1000, activeOffer - 2000);
+  if (negoInput && negoInput.dataset.bookingId !== String(b.id)) {
+    negoInput.value = activeOffer ?? currentPrice ?? '';
+    negoInput.dataset.bookingId = String(b.id);
   }
 
   if (curStatus === 'confirmed' || curStatus === 'completed' || curStatus === 'declined') {
@@ -6409,7 +6459,9 @@ async function handleChatCounterOffer() {
 async function handleChatConfirmOffer() {
   if (!activeChatRequest) return;
   const r = activeChatRequest;
-  const confirmPrice = r.active_offer || r.agreed_price || r.priceNum || 50000;
+  const confirmPrice = [r.active_offer, r.agreed_price, r.latest_offer_amount, r.current_price, r.rawBooking?.current_price]
+    .map(value => value === null || value === undefined || value === '' ? null : Number(value))
+    .find(value => value !== null && Number.isFinite(value));
   const confirmBtn = document.getElementById('btn-chat-confirm');
   const origText = confirmBtn ? confirmBtn.innerHTML : 'Confirm Booking';
 
@@ -6420,9 +6472,9 @@ async function handleChatConfirmOffer() {
 
   try {
     if (window.RivoraAPI && RivoraAPI.isAuthenticated() && typeof r.id === 'number') {
-      const confirmedBooking = await RivoraAPI.confirmBooking(r.id, confirmPrice);
+      const confirmedBooking = await RivoraAPI.confirmBooking(r.id);
       r.status = 'confirmed';
-      r.agreed_price = confirmPrice;
+      if (confirmPrice !== undefined) r.agreed_price = confirmPrice;
       if (confirmedBooking.transaction_code) {
         r.transaction_code = confirmedBooking.transaction_code;
       }
@@ -6431,7 +6483,7 @@ async function handleChatConfirmOffer() {
     r.status = 'confirmed';
     if (r.rawBooking) {
       r.rawBooking.status = 'confirmed';
-      r.rawBooking.agreed_price = confirmPrice;
+      if (confirmPrice !== undefined) r.rawBooking.agreed_price = confirmPrice;
     }
 
     await updateChatModalData();
@@ -6572,6 +6624,57 @@ let mapMarkers = {};   // resource id -> Leaflet marker
 let userMarker = null;
 let mapRadiusKm = 10;
 
+const MAP_PREVIEW_MESSAGE = 'Map preview shown. Run the app through its local server to load interactive street tiles.';
+
+/**
+ * Add OSM tiles only when the app has a web origin. The OSM tile service
+ * intentionally rejects requests from pages opened directly with file://,
+ * which otherwise fills the map with 403 error tiles.
+ */
+function addMapBaseLayer(map) {
+  if (window.location.protocol === 'file:') {
+    showMapPreview(map);
+    return null;
+  }
+
+  const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 18,
+    attribution: '&copy; OpenStreetMap contributors',
+  }).addTo(map);
+
+  let failedTileCount = 0;
+  tiles.on('tileerror', () => {
+    failedTileCount += 1;
+    if (failedTileCount < 2) return;
+
+    map.removeLayer(tiles);
+    showMapPreview(map);
+  });
+
+  return tiles;
+}
+
+function showMapPreview(map) {
+  const mapEl = map.getContainer();
+  if (mapEl.classList.contains('map--offline-preview')) return;
+
+  mapEl.classList.add('map--offline-preview');
+  map.attributionControl?.setPrefix(false);
+
+  const mapPanel = mapEl.closest('.panel');
+  const attribution = mapPanel?.querySelector('.map-attribution');
+  if (attribution) {
+    attribution.removeAttribute('data-i18n');
+    attribution.textContent = MAP_PREVIEW_MESSAGE;
+  }
+
+  const mapNote = document.getElementById('map-note');
+  if (mapNote) {
+    mapNote.textContent = MAP_PREVIEW_MESSAGE;
+    mapNote.hidden = false;
+  }
+}
+
 function haversineKm(a, b) {
   const R = 6371;
   const dLat = (b.lat - a.lat) * Math.PI / 180;
@@ -6587,10 +6690,7 @@ function initResourceMap() {
 
   resourceMap = L.map(mapEl, { scrollWheelZoom: false }).setView([SEEKER_HOME.lat, SEEKER_HOME.lng], 12);
 
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 18,
-    attribution: '&copy; OpenStreetMap contributors',
-  }).addTo(resourceMap);
+  addMapBaseLayer(resourceMap);
 
   addUserMarker(SEEKER_HOME);
   renderMapMarkers(SAMPLE_RESOURCES);
@@ -6675,8 +6775,13 @@ function renderMapMarkers(list) {
 
   const note = document.getElementById('map-note');
   if (note) {
-    if (!list.length) { note.hidden = false; note.textContent = t('map.noneInRadius'); }
-    else note.hidden = true;
+    if (resourceMap?.getContainer().classList.contains('map--offline-preview')) {
+      note.hidden = false;
+      note.textContent = MAP_PREVIEW_MESSAGE;
+    } else if (!list.length) {
+      note.hidden = false;
+      note.textContent = t('map.noneInRadius');
+    } else note.hidden = true;
   }
 }
 

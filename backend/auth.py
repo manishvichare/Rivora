@@ -9,7 +9,9 @@ from config import JWT_SECRET_KEY, JWT_ALGORITHM, JWT_EXPIRE_MINUTES
 from database import get_db
 import models
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+import os
+_bcrypt_rounds = 4 if os.getenv("APP_ENV", "development").lower() != "production" else 12
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__rounds=_bcrypt_rounds)
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
 
