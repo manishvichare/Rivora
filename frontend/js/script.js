@@ -939,7 +939,23 @@ function initLoginPage() {
     if (window.RivoraAPI) {
       try {
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending verification code…'; }
+
+        // Show a "waking up" message after 4s to explain Render cold-start delay
+        let wakeTimer = setTimeout(() => {
+          if (submitBtn && submitBtn.disabled) {
+            submitBtn.textContent = '⏳ Server is waking up, please wait…';
+          }
+        }, 4000);
+        // After 15s, reassure user it's still working
+        let stillWorkingTimer = setTimeout(() => {
+          if (submitBtn && submitBtn.disabled) {
+            submitBtn.textContent = '🔄 Still connecting, almost there…';
+          }
+        }, 15000);
+
         const res = await RivoraAPI.login(email, password);
+        clearTimeout(wakeTimer);
+        clearTimeout(stillWorkingTimer);
 
         // If OTP is required (standard secure flow)
         if (res && res.require_otp && res.session_id) {
@@ -3525,6 +3541,9 @@ async function initAnalyticsPage() {
   const earningsChart = document.getElementById('earnings-chart');
   if (!earningsChart) return;
 
+  const syncButton = document.getElementById('sheet-sync-button');
+  if (syncButton) syncButton.addEventListener('click', syncAnalyticsToSheet);
+
   await refreshDashboardAndAnalytics();
 
   window.refreshAnalytics = () => {
@@ -3546,6 +3565,52 @@ async function initAnalyticsPage() {
       refreshDashboardAndAnalytics();
     }
   });
+}
+
+async function syncAnalyticsToSheet() {
+  const button = document.getElementById('sheet-sync-button');
+  const label = button?.querySelector('.sheet-sync-button-label');
+  const status = document.getElementById('sheet-sync-status');
+  if (!button || !label || !status) return;
+  if (!RivoraAPI.isAuthenticated()) {
+    status.dataset.state = 'error';
+    status.textContent = 'Sign in to sync your financial records.';
+    return;
+  }
+
+  button.disabled = true;
+  button.classList.add('is-loading');
+  button.classList.remove('is-success', 'is-error');
+  label.textContent = 'Syncing…';
+  status.dataset.state = 'loading';
+  status.textContent = 'Sending this month’s invoice records to Google Sheets.';
+
+  const now = new Date();
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  try {
+    const response = await fetch(`${RivoraAPI.baseUrl}/api/analytics/sync-sheet`, {
+      method: 'POST',
+      headers: RivoraAPI.getHeaders(true),
+      body: JSON.stringify({ month }),
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const detail = typeof result.detail === 'string' ? result.detail : 'Google Sheets sync failed.';
+      throw new Error(detail);
+    }
+    button.classList.add('is-success');
+    label.textContent = '✓ Synced to Cloud Sheet';
+    status.dataset.state = 'success';
+    status.textContent = result.message || `Synced ${result.appended || 0} row(s).`;
+  } catch (error) {
+    button.classList.add('is-error');
+    label.textContent = 'Retry Cloud Sheet Sync';
+    status.dataset.state = 'error';
+    status.textContent = error.message || 'Could not sync to Google Sheets.';
+  } finally {
+    button.classList.remove('is-loading');
+    button.disabled = false;
+  }
 }
 
 function renderAnalyticsFromData(data) {
