@@ -3626,6 +3626,9 @@ async function syncAnalyticsToSheet() {
     return;
   }
 
+  let sheetTab = null;
+  try { sheetTab = window.open('about:blank', '_blank'); } catch (_) { /* Popup fallback uses the link below. */ }
+
   button.disabled = true;
   button.classList.add('is-loading');
   button.classList.remove('is-success', 'is-error');
@@ -3650,7 +3653,22 @@ async function syncAnalyticsToSheet() {
     label.textContent = '✓ Synced to Cloud Sheet';
     status.dataset.state = 'success';
     status.textContent = result.message || `Synced ${result.appended || 0} row(s).`;
+    if (typeof result.sheet_url === 'string' && result.sheet_url.startsWith('https://docs.google.com/spreadsheets/')) {
+      if (sheetTab && !sheetTab.closed) {
+        sheetTab.location.href = result.sheet_url;
+      } else {
+        const openLink = document.createElement('a');
+        openLink.href = result.sheet_url;
+        openLink.target = '_blank';
+        openLink.rel = 'noopener noreferrer';
+        openLink.textContent = 'Open Google Sheet';
+        status.append(document.createTextNode(' '), openLink);
+      }
+    } else if (sheetTab && !sheetTab.closed) {
+      sheetTab.close();
+    }
   } catch (error) {
+    if (sheetTab && !sheetTab.closed) sheetTab.close();
     button.classList.add('is-error');
     label.textContent = 'Retry Cloud Sheet Sync';
     status.dataset.state = 'error';

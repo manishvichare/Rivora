@@ -1,9 +1,14 @@
 from datetime import datetime
 import csv
 import io
+import json
+import logging
+import os
+from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import Response
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -205,6 +210,125 @@ SHEET_HEADERS = [
     "Date", "Booking ID", "Client", "Resource", "Category",
     "Income", "Expense", "GST/Tax", "Payment Method",
 ]
+
+
+class SheetSyncRequest(BaseModel):
+    month: str = Field(pattern=r"^\d{4}-(0[1-9]|1[0-2])$")
+
+
+def _get_sheets_client():
+    try:
+        import gspread
+    except ImportError as exc:
+        raise HTTPException(status_code=503, detail="Google Sheets support is not installed on this server.") from exc
+
+    credentials_json = os.getenv("GOOGLE_SERVICE_ACCOUNT_JSON", "").strip()
+    if credentials_json:
+        try:
+            service_account_info = json.loads(credentials_json)
+            return gspread.service_account_from_dict(service_account_info)
+        except (json.JSONDecodeError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=503, detail="Google service-account JSON is invalid.") from exc
+
+    configured_path = os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "service_account.json")
+    credentials_path = Path(configured_path)
+    if not credentials_path.is_absolute():
+        credentials_path = Path(__file__).resolve().parents[1] / credentials_path
+    if not credentials_path.is_file():
+        raise HTTPException(
+            status_code=503,
+            detail="Google Sheets is not configured. Set GOOGLE_SERVICE_ACCOUNT_JSON or provide the service-account file.",
+        )
+    return gspread.service_account(filename=str(credentials_path))
+
+
+@router.post("/sync-sheet")
+def sync_month_to_google_sheet(
+    payload: SheetSyncRequest,
+    db: Session = Depends(get_db),
+    current: models.Business = Depends(get_current_business),
+):
+    sheet_id = os.getenv("GOOGLE_SHEET_ID", "").strip()
+    if not sheet_id:
+        raise HTTPException(status_code=503, detail="Google Sheets is not configured. Set GOOGLE_SHEET_ID on the backend.")
+
+    month_start = datetime.strptime(payload.month, "%Y-%m")
+    month_end = datetime(month_start.year + (month_start.month == 12), month_start.month % 12 + 1, 1)
+    invoices = (
+        db.query(models.Invoice)
+        .filter(
+            ((models.Invoice.provider_id == current.id) | (models.Invoice.seeker_id == current.id)),
+            models.Invoice.issued_at >= month_start,
+            models.Invoice.issued_at < month_end,
+            models.Invoice.status.in_(["paid", "issued"]),
+        )
+        .order_by(models.Invoice.issued_at, models.Invoice.booking_id)
+        .all()
+    )
+
+    rows = []
+    for invoice in invoices:
+        is_provider = invoice.provider_id == current.id
+        booking = invoice.booking
+        resource = booking.resource if booking else None
+        client = invoice.seeker.name if is_provider and invoice.seeker else (
+            invoice.provider.name if not is_provider and invoice.provider else "Business"
+        )
+        rows.append([
+            (invoice.issued_at or (booking.start_time if booking else month_start)).strftime("%Y-%m-%d"),
+            invoice.booking_id,
+            client,
+            resource.name if resource else "Resource",
+            "Income" if is_provider else "Expense",
+            float(invoice.base_amount or 0) if is_provider else 0.0,
+            float(invoice.total_amount or 0) if not is_provider else 0.0,
+            float(invoice.tax_gst or 0),
+            invoice.payment_method or "",
+        ])
+
+    worksheet_name = os.getenv("GOOGLE_SHEET_WORKSHEET", "Sheet1").strip() or "Sheet1"
+    try:
+        client = _get_sheets_client()
+        spreadsheet = client.open_by_key(sheet_id)
+        worksheet = spreadsheet.worksheet(worksheet_name)
+        existing_values = worksheet.get_all_values()
+
+        if not existing_values or not any(cell.strip() for cell in existing_values[0]):
+            worksheet.append_row(SHEET_HEADERS, value_input_option="RAW")
+            existing_values = [SHEET_HEADERS]
+        elif existing_values[0][:len(SHEET_HEADERS)] != SHEET_HEADERS:
+            raise HTTPException(
+                status_code=409,
+                detail="The first row of the selected sheet must match Rivora's financial export headers.",
+            )
+
+        existing_keys = {
+            (row[0], row[1], row[4])
+            for row in existing_values[1:]
+            if len(row) > 4
+        }
+        new_rows = [
+            row for row in rows
+            if (str(row[0]), str(row[1]), str(row[4])) not in existing_keys
+        ]
+        if new_rows:
+            worksheet.append_rows(new_rows, value_input_option="RAW")
+
+        sheet_url = spreadsheet.url
+        return {
+            "message": f"Synced {len(new_rows)} new row(s); skipped {len(rows) - len(new_rows)} already-synced row(s).",
+            "appended": len(new_rows),
+            "skipped": len(rows) - len(new_rows),
+            "sheet_url": sheet_url,
+        }
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logging.getLogger(__name__).exception("Google Sheets sync failed")
+        raise HTTPException(
+            status_code=502,
+            detail="Could not reach the Google Sheet. Check the service-account key, sheet sharing, worksheet name, and backend logs.",
+        ) from exc
 
 
 @router.get("/export-csv")
