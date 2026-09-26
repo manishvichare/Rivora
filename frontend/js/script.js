@@ -940,18 +940,18 @@ function initLoginPage() {
       try {
         if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = 'Sending verification code…'; }
 
-        // Show a "waking up" message after 4s to explain Render cold-start delay
+        // Show a "waking up" message after 8s (Render cold-start on free tier)
         let wakeTimer = setTimeout(() => {
           if (submitBtn && submitBtn.disabled) {
             submitBtn.textContent = '⏳ Server is waking up, please wait…';
           }
-        }, 4000);
-        // After 15s, reassure user it's still working
+        }, 8000);
+        // After 25s, reassure user it's still working
         let stillWorkingTimer = setTimeout(() => {
           if (submitBtn && submitBtn.disabled) {
             submitBtn.textContent = '🔄 Still connecting, almost there…';
           }
-        }, 15000);
+        }, 25000);
 
         const res = await RivoraAPI.login(email, password);
         clearTimeout(wakeTimer);
@@ -984,6 +984,13 @@ function initLoginPage() {
           }
 
           startResendCooldown(res.resend_cooldown_seconds || 60);
+
+          // Demo mode: auto-fill and auto-submit the OTP instantly
+          if (res.demo_mode && res.demo_otp && otpInput && otpForm) {
+            otpInput.value = res.demo_otp;
+            setTimeout(() => otpForm.requestSubmit(), 300);
+          }
+
           return;
         }
 
@@ -3541,8 +3548,13 @@ async function initAnalyticsPage() {
   const earningsChart = document.getElementById('earnings-chart');
   if (!earningsChart) return;
 
-  const syncButton = document.getElementById('sheet-sync-button');
-  if (syncButton) syncButton.addEventListener('click', syncAnalyticsToSheet);
+  const csvButton = document.getElementById('sheet-csv-button');
+  const exportMonth = document.getElementById('analytics-export-month');
+  if (exportMonth && !exportMonth.value) {
+    const now = new Date();
+    exportMonth.value = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+  if (csvButton) csvButton.addEventListener('click', downloadAnalyticsCsv);
 
   await refreshDashboardAndAnalytics();
 
@@ -3567,49 +3579,50 @@ async function initAnalyticsPage() {
   });
 }
 
-async function syncAnalyticsToSheet() {
-  const button = document.getElementById('sheet-sync-button');
-  const label = button?.querySelector('.sheet-sync-button-label');
-  const status = document.getElementById('sheet-sync-status');
-  if (!button || !label || !status) return;
+async function downloadAnalyticsCsv() {
+  const button = document.getElementById('sheet-csv-button');
+  const status = document.getElementById('analytics-export-status');
+  if (!button || !status) return;
   if (!RivoraAPI.isAuthenticated()) {
     status.dataset.state = 'error';
-    status.textContent = 'Sign in to sync your financial records.';
+    status.textContent = 'Sign in to export your financial records.';
     return;
   }
-
-  button.disabled = true;
-  button.classList.add('is-loading');
-  button.classList.remove('is-success', 'is-error');
-  label.textContent = 'Syncing…';
-  status.dataset.state = 'loading';
-  status.textContent = 'Sending this month’s invoice records to Google Sheets.';
-
-  const now = new Date();
-  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  try {
-    const response = await fetch(`${RivoraAPI.baseUrl}/api/analytics/sync-sheet`, {
-      method: 'POST',
-      headers: RivoraAPI.getHeaders(true),
-      body: JSON.stringify({ month }),
-    });
-    const result = await response.json().catch(() => ({}));
-    if (!response.ok) {
-      const detail = typeof result.detail === 'string' ? result.detail : 'Google Sheets sync failed.';
-      throw new Error(detail);
-    }
-    button.classList.add('is-success');
-    label.textContent = '✓ Synced to Cloud Sheet';
-    status.dataset.state = 'success';
-    status.textContent = result.message || `Synced ${result.appended || 0} row(s).`;
-  } catch (error) {
-    button.classList.add('is-error');
-    label.textContent = 'Retry Cloud Sheet Sync';
+  const month = document.getElementById('analytics-export-month')?.value;
+  if (!month) {
     status.dataset.state = 'error';
-    status.textContent = error.message || 'Could not sync to Google Sheets.';
+    status.textContent = 'Choose a month to export.';
+    return;
+  }
+  button.disabled = true;
+  button.textContent = 'Preparing CSV…';
+  status.dataset.state = 'loading';
+  status.textContent = 'Preparing your monthly financial export.';
+  try {
+    const response = await fetch(`${RivoraAPI.baseUrl}/api/analytics/export-csv?month=${month}`, {
+      headers: RivoraAPI.getHeaders(true),
+    });
+    if (!response.ok) {
+      const result = await response.json().catch(() => ({}));
+      throw new Error(typeof result.detail === 'string' ? result.detail : 'CSV export failed.');
+    }
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `rivora-financials-${month}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    URL.revokeObjectURL(url);
+    status.dataset.state = 'success';
+    status.textContent = `CSV downloaded for ${month}.`;
+  } catch (error) {
+    status.dataset.state = 'error';
+    status.textContent = error.message || 'CSV export failed.';
   } finally {
-    button.classList.remove('is-loading');
     button.disabled = false;
+    button.textContent = 'Export CSV';
   }
 }
 

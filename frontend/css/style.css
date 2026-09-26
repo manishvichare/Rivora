@@ -1025,6 +1025,13 @@ h1, h2, h3, h4 {
 
 /* ---------- analytics ---------- */
 
+.analytics-export-row { display: flex; align-items: center; gap: 0.85rem; flex-wrap: wrap; margin: 0 0 1.25rem; }
+.analytics-export-row label { color: var(--ink-soft); font-size: 0.9rem; }
+.analytics-month-input { min-height: 2.6rem; padding: 0.45rem 0.65rem; border: 1px solid var(--border-strong); border-radius: var(--radius-sm); background: var(--surface); color: var(--ink); font: inherit; }
+.analytics-export-status { color: var(--ink-soft); font-size: 0.88rem; }
+.analytics-export-status[data-state="success"] { color: var(--emerald); }
+.analytics-export-status[data-state="error"] { color: var(--rose); }
+
 .bar-chart { display: flex; align-items: flex-end; gap: 1rem; height: 190px; padding-top: 1rem; }
 .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 0.6rem; height: 100%; }
 .bar-value { font-family: var(--font-mono); font-size: 0.72rem; color: var(--ink-soft); }

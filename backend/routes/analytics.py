@@ -1,5 +1,9 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends
+import csv
+import io
+
+from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi.responses import Response
 from sqlalchemy.orm import Session
 
 from database import get_db
@@ -194,4 +198,61 @@ def get_analytics_summary(
         provider_history=provider_history,
         seeker_history=seeker_history,
         avg_match_score=avg_match,
+    )
+
+
+SHEET_HEADERS = [
+    "Date", "Booking ID", "Client", "Resource", "Category",
+    "Income", "Expense", "GST/Tax", "Payment Method",
+]
+
+
+@router.get("/export-csv")
+def export_month_as_csv(
+    month: str = Query(pattern=r"^\d{4}-(0[1-9]|1[0-2])$"),
+    db: Session = Depends(get_db),
+    current: models.Business = Depends(get_current_business),
+):
+    try:
+        month_start = datetime.strptime(month, "%Y-%m")
+    except ValueError:
+        raise HTTPException(status_code=422, detail="month must use YYYY-MM format")
+    if month_start.strftime("%Y-%m") != month:
+        raise HTTPException(status_code=422, detail="month must use YYYY-MM format")
+    month_end = datetime(month_start.year + (month_start.month == 12), month_start.month % 12 + 1, 1)
+    invoices = (
+        db.query(models.Invoice)
+        .filter(
+            ((models.Invoice.provider_id == current.id) | (models.Invoice.seeker_id == current.id)),
+            models.Invoice.issued_at >= month_start,
+            models.Invoice.issued_at < month_end,
+            models.Invoice.status.in_(["paid", "issued"]),
+        )
+        .order_by(models.Invoice.issued_at, models.Invoice.booking_id)
+        .all()
+    )
+    output = io.StringIO(newline="")
+    writer = csv.writer(output)
+    writer.writerow(SHEET_HEADERS)
+    for invoice in invoices:
+        is_provider = invoice.provider_id == current.id
+        booking = invoice.booking
+        resource = booking.resource if booking else None
+        client = invoice.seeker.name if is_provider and invoice.seeker else (
+            invoice.provider.name if not is_provider and invoice.provider else "Business"
+        )
+        def safe_text(value):
+            return "'" + value if value.startswith(("=", "+", "-", "@")) else value
+        writer.writerow([
+            (invoice.issued_at or (booking.start_time if booking else month_start)).strftime("%Y-%m-%d"),
+            invoice.booking_id, safe_text(client), safe_text(resource.name if resource else "Resource"),
+            "Income" if is_provider else "Expense",
+            float(invoice.base_amount or 0) if is_provider else 0.0,
+            float(invoice.total_amount or 0) if not is_provider else 0.0,
+            float(invoice.tax_gst or 0), safe_text(invoice.payment_method or ""),
+        ])
+    return Response(
+        content="\ufeff" + output.getvalue(),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="rivora-financials-{month}.csv"'},
     )

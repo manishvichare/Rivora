@@ -10,3 +10,9 @@ backend/venv/
 __pycache__/
 *.py[cod]
 backend/outbox/
+
+# Google Sheets service account key (never commit)
+backend/service_account.json
+
+# Protect downloaded Google service-account key files, including hidden-extension variants
+backend/service_account*.json
