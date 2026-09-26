@@ -596,6 +596,10 @@ const RivoraAPI = {
   },
 
   // Reviews
+  async getMyReviews() {
+    return this.request("/reviews/mine", { method: "GET", requireAuth: true });
+  },
+
   async getResourceReviews(resourceId) {
     return this.request(`/reviews/resource/${resourceId}`, { method: "GET" });
   },

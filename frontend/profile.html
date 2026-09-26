@@ -105,11 +105,38 @@
         </div>
       </div>
 
-      <section class="panel">
+      <section class="panel" id="profile-recent-reviews">
         <div class="panel-head"><h2 class="panel-title" data-i18n="profile.recentReviews">Recent reviews</h2></div>
-        <div class="review-item"><div class="review-head"><span class="review-author">Bayview Resort Events</span><span class="review-rating">5.0 ★</span></div><p class="review-text" data-i18n="reviews.review1">Smooth handover, hall was exactly as listed. Would book again for our next gala.</p></div>
-        <div class="review-item"><div class="review-head"><span class="review-author">Palm Court Catering</span><span class="review-rating">4.5 ★</span></div><p class="review-text" data-i18n="reviews.review2">Great space for the price. AV hookup took a bit of setup time on arrival.</p></div>
-        <div class="review-item"><div class="review-head"><span class="review-author">Grand Terrace Hotel</span><span class="review-rating">4.0 ★</span></div><p class="review-text" data-i18n="reviews.review3">Good experience overall, kitchen access could have been clearer in the listing.</p></div>
+        <div id="profile-reviews-list"><p class="calendar-hint">Loading your reviews…</p></div>
+      </section>
+
+      <section class="panel review-compose" id="profile-leave-review">
+        <div class="panel-head"><h2 class="panel-title">Leave a review</h2></div>
+        <p class="calendar-hint">Share feedback about a completed booking. Reviews are tied to verified transactions.</p>
+        <form id="profile-review-form" class="review-form">
+          <div class="field">
+            <label for="review-booking-select">Completed booking</label>
+            <select id="review-booking-select" required><option value="">Loading completed bookings…</option></select>
+          </div>
+          <div class="field">
+            <label for="review-rating-select">Your rating</label>
+            <select id="review-rating-select" required>
+              <option value="5">5 stars — Excellent</option>
+              <option value="4">4 stars — Good</option>
+              <option value="3">3 stars — Average</option>
+              <option value="2">2 stars — Poor</option>
+              <option value="1">1 star — Very poor</option>
+            </select>
+          </div>
+          <div class="field review-form-comment">
+            <label for="review-comment-input">Review and feedback</label>
+            <textarea id="review-comment-input" rows="4" maxlength="2000" placeholder="How was your booking experience?" required></textarea>
+          </div>
+          <div class="review-form-actions">
+            <button class="btn btn-primary" id="review-submit-button" type="submit">Submit review</button>
+            <span id="review-form-status" class="form-confirm" role="status" aria-live="polite"></span>
+          </div>
+        </form>
       </section>
 
     </main>

@@ -3672,7 +3672,9 @@ async function syncAnalyticsToSheet() {
     button.classList.add('is-error');
     label.textContent = 'Retry Cloud Sheet Sync';
     status.dataset.state = 'error';
-    status.textContent = error.message || 'Could not sync to Google Sheets.';
+    status.textContent = error instanceof TypeError
+      ? 'Cannot reach Rivora backend (' + RivoraAPI.baseUrl + '). Start FastAPI or check its CORS settings, then retry.'
+      : (error.message || 'Could not sync to Google Sheets.');
   } finally {
     button.classList.remove('is-loading');
     button.disabled = false;

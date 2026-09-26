@@ -44,6 +44,19 @@ def create_review(
     return out
 
 
+@router.get("/mine", response_model=list[schemas.ReviewOut])
+def get_my_reviews(
+    db: Session = Depends(get_db),
+    current: models.Business = Depends(get_current_business),
+):
+    return (
+        db.query(models.Review)
+        .filter(models.Review.reviewer_id == current.id)
+        .order_by(models.Review.created_at.desc())
+        .all()
+    )
+
+
 @router.get("/resource/{resource_id}", response_model=list[schemas.ReviewOut])
 def get_resource_reviews(resource_id: int, db: Session = Depends(get_db)):
     return (

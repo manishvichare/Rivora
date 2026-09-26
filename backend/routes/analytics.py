@@ -286,11 +286,19 @@ def sync_month_to_google_sheet(
             invoice.payment_method or "",
         ])
 
-    worksheet_name = os.getenv("GOOGLE_SHEET_WORKSHEET", "Sheet1").strip() or "Sheet1"
+    worksheet_name = os.getenv("GOOGLE_SHEET_WORKSHEET", "").strip()
     try:
         client = _get_sheets_client()
         spreadsheet = client.open_by_key(sheet_id)
-        worksheet = spreadsheet.worksheet(worksheet_name)
+        worksheets = spreadsheet.worksheets()
+        if not worksheets:
+            raise HTTPException(status_code=409, detail="The spreadsheet does not contain a worksheet.")
+        worksheet = next((ws for ws in worksheets if ws.title == worksheet_name), None) if worksheet_name else worksheets[0]
+        if worksheet is None and worksheet_name == "Sheet1":
+            # Sheet1 is a conventional default, but existing spreadsheets often rename their first tab.
+            worksheet = worksheets[0]
+        if worksheet is None:
+            raise HTTPException(status_code=409, detail=f"Worksheet '{worksheet_name}' was not found. Set GOOGLE_SHEET_WORKSHEET to an existing tab name.")
         existing_values = worksheet.get_all_values()
 
         if not existing_values or not any(cell.strip() for cell in existing_values[0]):
@@ -325,10 +333,17 @@ def sync_month_to_google_sheet(
         raise
     except Exception as exc:
         logging.getLogger(__name__).exception("Google Sheets sync failed")
-        raise HTTPException(
-            status_code=502,
-            detail="Could not reach the Google Sheet. Check the service-account key, sheet sharing, worksheet name, and backend logs.",
-        ) from exc
+        response = getattr(exc, "response", None)
+        google_status = getattr(response, "status_code", None)
+        if type(exc).__name__ == "SpreadsheetNotFound":
+            detail = "Google could not find this spreadsheet. Check the sheet ID and share it with the service account."
+        elif google_status == 403 or isinstance(exc, PermissionError):
+            detail = "Google denied access to this spreadsheet. Share it with the service-account email configured for this backend and grant Editor access."
+        elif type(exc).__name__ == "WorksheetNotFound":
+            detail = "The configured worksheet tab was not found. Set GOOGLE_SHEET_WORKSHEET to an existing tab."
+        else:
+            detail = "Could not reach the Google Sheet. Check backend logs for the Google API error."
+        raise HTTPException(status_code=502, detail=detail) from exc
 
 
 @router.get("/export-csv")
