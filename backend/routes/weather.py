@@ -1,6 +1,7 @@
 """Atmospheric intelligence API for Rivora's provider and seeker dashboards."""
 
 import asyncio
+import logging
 from datetime import datetime, timedelta
 
 import httpx
@@ -19,6 +20,7 @@ from services.local_signals import get_local_signals
 router = APIRouter(tags=["weather-intelligence"])
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 optional_oauth = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
+logger = logging.getLogger(__name__)
 
 
 @router.get("/resource-alerts")
@@ -139,7 +141,7 @@ async def _fetch_weather(lat: float, lon: float, city: str) -> dict:
         "timezone": "auto",
     }
     try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
+        async with httpx.AsyncClient(timeout=20.0) as client:
             response = await client.get(OPEN_METEO_URL, params=params)
             response.raise_for_status()
             payload = response.json()
@@ -186,7 +188,8 @@ async def _fetch_weather(lat: float, lon: float, city: str) -> dict:
             "weather_source": "Open-Meteo",
             "status": "Live Connected",
         }
-    except (httpx.HTTPError, KeyError, TypeError, ValueError):
+    except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
+        logger.warning("Open-Meteo request failed for %.4f, %.4f: %s", lat, lon, exc)
         return _fallback_payload(lat, lon, city)
 
 
