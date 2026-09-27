@@ -139,7 +139,7 @@
     };
   }
 
-  async function loadWeather(location, selector, syncTwin = false) {
+  async function loadWeather(location, selector, syncTwin = false, retryAttempt = 0) {
     activeLocation = location;
     if (selector) {
       ensureCityOption(selector, location.city);
@@ -152,12 +152,24 @@
     status.textContent = 'Refreshing local weather and reports…';
     status.dataset.mode = 'loading';
     try {
-      const response = await fetch(`${endpoint}?${params}`, { signal: AbortSignal.timeout(12000) });
+      // Render's free web services can take about a minute to wake after idling.
+      const response = await fetch(`${endpoint}?${params}`, { signal: AbortSignal.timeout(90000) });
       if (!response.ok) throw new Error(`Weather service returned ${response.status}`);
       const result = await response.json();
       if (currentRequest === requestId) render(result, location.city);
-    } catch (_) {
-      if (currentRequest === requestId) render(fallbackData(location.city), location.city);
+    } catch (error) {
+      console.warn('[RivoraWeather] Live weather request failed:', error);
+      if (currentRequest === requestId) {
+        render(fallbackData(location.city), location.city);
+        if (retryAttempt < 1) {
+          const status = document.getElementById('weather-intel-status');
+          status.textContent = 'Weather service did not respond yet. Retrying shortly…';
+          status.dataset.mode = 'loading';
+          window.setTimeout(() => {
+            if (currentRequest === requestId) loadWeather(location, selector, false, retryAttempt + 1);
+          }, 15000);
+        }
+      }
     }
   }
 
