@@ -16,3 +16,5 @@ backend/service_account.json
 
 # Protect downloaded Google service-account key files, including hidden-extension variants
 backend/service_account*.json
+backend/.venv/
+backend/rehash_password.py

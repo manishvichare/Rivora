@@ -91,16 +91,10 @@
           <div class="panel">
             <div class="panel-head"><h2 class="panel-title" data-i18n="profile.ratings">Ratings received</h2></div>
             <div class="rating-summary">
-              <span class="rating-big text-gradient">4.6</span>
-              <div class="rating-bars">
-                <div class="rating-bar-row"><span>5★</span><div class="util-bar"><div class="util-bar-fill" style="width:70%"></div></div></div>
-                <div class="rating-bar-row"><span>4★</span><div class="util-bar"><div class="util-bar-fill" style="width:22%"></div></div></div>
-                <div class="rating-bar-row"><span>3★</span><div class="util-bar"><div class="util-bar-fill" style="width:6%"></div></div></div>
-                <div class="rating-bar-row"><span>2★</span><div class="util-bar"><div class="util-bar-fill" style="width:2%"></div></div></div>
-                <div class="rating-bar-row"><span>1★</span><div class="util-bar"><div class="util-bar-fill" style="width:0%"></div></div></div>
-              </div>
+              <span class="rating-big text-gradient" id="profile-rating-average">—</span>
+              <div class="rating-bars" id="profile-rating-bars"></div>
             </div>
-            <span class="calendar-hint" data-i18n="profile.basedOn">Based on 32 completed bookings</span>
+            <span class="calendar-hint" id="profile-rating-count">Loading verified ratings…</span>
           </div>
         </div>
       </div>
@@ -108,6 +102,11 @@
       <section class="panel" id="profile-recent-reviews">
         <div class="panel-head"><h2 class="panel-title" data-i18n="profile.recentReviews">Recent reviews</h2></div>
         <div id="profile-reviews-list"><p class="calendar-hint">Loading your reviews…</p></div>
+      </section>
+
+      <section class="panel" id="profile-received-reviews">
+        <div class="panel-head"><h2 class="panel-title">Reviews received from customers</h2></div>
+        <div id="profile-received-reviews-list"><p class="calendar-hint">Loading verified reviews…</p></div>
       </section>
 
       <section class="panel review-compose" id="profile-leave-review">

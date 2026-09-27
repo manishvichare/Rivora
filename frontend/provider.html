@@ -34,6 +34,10 @@
         <svg viewBox="0 0 24 24" fill="none"><rect x="3" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="3" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="3" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/><rect x="14" y="14" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.8"/></svg>
         <span data-i18n="nav.dashboard">Dashboard</span>
       </a>
+      <a class="sidebar-link sidebar-link--weather" href="#weather-news-section" aria-label="Weather and news">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7.5 18.5h9a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 6.45 9.2a4.7 4.7 0 0 0 1.05 9.3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 2.5v1.8M4.4 5.1l1.3 1.3m12.6-1.3L17 6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>Weather &amp; News</span><span class="sidebar-live-badge"><i></i> LIVE</span>
+      </a>
       <a class="sidebar-link" href="requests.html">
         <svg viewBox="0 0 24 24" fill="none"><path d="M3 12l2.5-7A2 2 0 0 1 7.4 3.5h9.2a2 2 0 0 1 1.9 1.5L21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 12h5l1.5 2.5h5L16 12h5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
         <span data-i18n="nav.requests">Requests</span>
@@ -75,11 +79,37 @@
 
     <main class="app-content" id="main-content">
 
-      <section class="kpi-grid">
+      <section class="kpi-grid provider-kpi-grid">
         <div class="kpi-card kpi-accent"><div class="kpi-top"><div class="kpi-icon" style="background: var(--brand-soft); color: var(--indigo);">₹</div></div><div class="kpi-value" id="kpi-earnings">₹0</div><div class="kpi-label" data-i18n="provider.earnings">Earnings this month</div></div>
         <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background: var(--emerald-soft); color: var(--emerald);">%</div></div><div class="kpi-value" id="kpi-utilization">0%</div><div class="kpi-label" data-i18n="provider.utilization">Utilization this month</div></div>
         <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background: var(--amber-soft); color: var(--amber);">!</div></div><div class="kpi-value" id="kpi-pending">0</div><div class="kpi-label" data-i18n="provider.pendingRequests">Pending requests</div></div>
         <div class="kpi-card"><div class="kpi-top"><div class="kpi-icon" style="background: var(--lavender-soft); color: var(--lavender);">▣</div></div><div class="kpi-value" id="kpi-listings">0</div><div class="kpi-label" data-i18n="provider.activeListings">Active listings</div></div>
+        <a class="kpi-card weather-kpi-card" id="provider-weather-card" href="#weather-news-section" aria-label="Open live weather and news">
+          <div class="kpi-top"><div class="kpi-icon">☀</div><span class="weather-kpi-live"><i></i> LIVE</span></div>
+          <div class="kpi-value" id="weather-kpi-temperature">--°C</div>
+          <div class="kpi-label"><span id="weather-kpi-city">Navi Mumbai</span> · <span id="weather-kpi-condition">Loading weather</span></div>
+          <div class="weather-kpi-foot"><span>Rain <b id="weather-kpi-rain">-- mm/h</b></span><span>Wind <b id="weather-kpi-wind">--</b></span><span id="weather-kpi-risk" data-level="normal">Normal</span></div>
+        </a>
+      </section>
+
+      <section class="panel weather-intel-panel" id="weather-news-section" aria-labelledby="weather-intel-title">
+        <div class="panel-head weather-intel-head">
+          <div><h2 class="panel-title" id="weather-intel-title">Weather &amp; News</h2><p class="weather-intel-subtitle">Open-Meteo conditions and local reports. Risk badges are Rivora estimates; follow official IMD warnings.</p><div class="weather-intel-context"><span class="weather-intel-place" id="weather-intel-city-label">Navi Mumbai</span><span class="weather-intel-live-pill"><i></i> LIVE</span><span class="weather-intel-risk-pill" id="weather-intel-header-risk" data-level="normal">Flood: Normal</span></div></div>
+          <div class="weather-intel-controls"><label class="visually-hidden" for="weather-intel-city">Weather location</label><select id="weather-intel-city"><option value="Navi Mumbai">Navi Mumbai</option><option value="Panvel">Panvel</option><option value="Mumbai">Mumbai</option><option value="Thane">Thane</option></select><button class="btn btn-outline btn-sm" id="weather-intel-locate" type="button">Use my location</button></div>
+        </div>
+        <div class="weather-intel-status" id="weather-intel-status" role="status">Connecting to live weather…</div>
+        <div class="weather-intel-overview">
+          <div class="weather-intel-hero"><span id="weather-intel-icon" aria-hidden="true">🌡️</span><div><strong id="weather-intel-temperature">--°</strong><span id="weather-intel-condition">Waiting for weather</span></div></div>
+          <div class="weather-intel-metric"><span>Precipitation</span><b id="weather-intel-rain">-- mm/h</b></div>
+          <div class="weather-intel-metric"><span>Humidity</span><b id="weather-intel-humidity">--%</b></div>
+          <div class="weather-intel-metric"><span>Wind</span><b id="weather-intel-wind">-- km/h</b></div>
+          <div class="weather-intel-metric"><span>Flood risk</span><b id="weather-intel-flood" data-level="normal">Normal</b></div>
+        </div>
+        <div class="weather-intel-lower">
+          <div class="weather-intel-block"><div class="weather-intel-block-head"><h3>Next 6 hours</h3><span>Local forecast</span></div><div class="weather-timeline" id="weather-intel-timeline" aria-live="polite"><span class="weather-empty">Loading forecast…</span></div></div>
+          <div class="weather-intel-block"><div class="weather-intel-block-head"><h3>Local operations signals</h3><span id="weather-intel-news-source">Public reports</span></div><div class="weather-news-list" id="weather-intel-signals" aria-live="polite"><span class="weather-empty">Loading local reports…</span></div></div>
+        </div>
+        <a class="weather-map-link" href="seeker.html#weather-news-section">Open the mapped Digital Twin and run a weather scenario <span aria-hidden="true">→</span></a>
       </section>
 
       <!-- Business Proof & Verification Action Banner -->
@@ -149,6 +179,12 @@
             </div>
             <div class="field"><label for="r-min-duration" data-i18n="resource.minDuration">Minimum booking length</label><input id="r-min-duration" type="number" min="1" data-i18n-placeholder="resource.minDurationPlaceholder" placeholder="e.g. 4 hours"></div>
             <div class="field"><label for="r-conditions" data-i18n="resource.conditions">Conditions</label><textarea id="r-conditions" rows="2" data-i18n-placeholder="resource.conditionsPlaceholder" placeholder="e.g. No amplified music after 10pm"></textarea></div>
+            <div class="field-row">
+              <div class="field"><label for="r-latitude">Venue latitude (optional)</label><input id="r-latitude" type="number" min="-90" max="90" step="any" placeholder="e.g. 19.0760"></div>
+              <div class="field"><label for="r-longitude">Venue longitude (optional)</label><input id="r-longitude" type="number" min="-180" max="180" step="any" placeholder="e.g. 72.8777"></div>
+            </div>
+            <p class="calendar-hint" style="margin:-.35rem 0 .8rem;">Use the venue’s coordinates for local weather alerts. If you are at the venue, you can fill them from your device. For exposed spaces, describe them as outdoor, open-air, or uncovered in the listing.</p>
+            <button type="button" class="btn btn-outline btn-sm" id="r-use-device-location" style="margin-bottom:.9rem;">Use my current location</button>
             <button type="submit" class="btn btn-primary" data-i18n="resource.listIt">List resource</button>
             <span class="form-confirm" id="form-confirm" hidden data-i18n="resource.listed">Listed — added below.</span>
           </form>
@@ -177,5 +213,6 @@
 <script src="js/translations.js"></script>
 <script src="js/api.js"></script>
 <script src="js/script.js"></script>
+<script src="js/weather-intel.js"></script>
 </body>
 </html>

@@ -5,16 +5,18 @@ from sqlalchemy.orm import Session
 from database import get_db
 import models, schemas
 from auth import get_current_business
+from services.weather_alerts import refresh_weather_notifications
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
 
 @router.get("", response_model=list[schemas.NotificationOut])
-def get_notifications(
+async def get_notifications(
     category: Optional[str] = Query(None, description="Category filter"),
     db: Session = Depends(get_db),
     current: models.Business = Depends(get_current_business),
 ):
+    await refresh_weather_notifications(db, current.id)
     query = db.query(models.Notification).filter(models.Notification.business_id == current.id)
     if category and category.lower() != "all":
         query = query.filter(models.Notification.category == category.lower())

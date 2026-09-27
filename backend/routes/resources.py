@@ -39,6 +39,12 @@ def create_resource(
     if data.get("image_url") and not data.get("images"):
         data["images"] = json.dumps([data["image_url"]])
 
+    # Resource-specific coordinates win; otherwise use the provider's verified
+    # business location so listing weather alerts still use a real coordinate.
+    data["latitude"] = data.get("latitude") if data.get("latitude") is not None else current.latitude
+    data["longitude"] = data.get("longitude") if data.get("longitude") is not None else current.longitude
+    data["location"] = data.get("location") or current.location
+
     resource = models.Resource(provider_id=current.id, **data)
     db.add(resource)
     db.commit()

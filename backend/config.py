@@ -41,5 +41,8 @@ if not JWT_SECRET_KEY:
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRE_MINUTES = 60 * 24  # 24 hours
 
+# NewsAPI credentials are read only by backend code and never returned to clients.
+NEWS_API_KEY = os.getenv("NEWS_API_KEY", "").strip()
+
 # Simulated authentication code requested for the Render demo deployment.
 DEMO_OTP_CODE = "676767"

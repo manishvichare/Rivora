@@ -10,7 +10,7 @@ from fastapi.responses import FileResponse
 
 from database import Base, engine
 import models  # noqa: F401
-from routes import businesses, resources, bookings, requests as requirements_route, reviews, analytics, verification, transactions, notifications
+from routes import businesses, resources, bookings, requests as requirements_route, reviews, analytics, verification, transactions, notifications, digital_twin, weather
 
 Base.metadata.create_all(bind=engine)
 
@@ -57,6 +57,10 @@ all_routers = [
 for r in all_routers:
     app.include_router(r)
     app.include_router(r, prefix="/api")
+
+# Digital Twin endpoints have a dedicated API namespace.
+app.include_router(digital_twin.router, prefix="/api/twin")
+app.include_router(weather.router, prefix="/api/weather")
 
 frontend_dir = Path(__file__).resolve().parent.parent / "frontend"
 

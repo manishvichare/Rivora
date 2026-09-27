@@ -187,18 +187,45 @@ function initAuthUI() {
     return;
   }
 
-  // Update topbar actions & logout
+  // Show dashboard/logout actions for authenticated visitors on public pages.
   document.querySelectorAll('.navbar-actions').forEach((nav) => {
-    if (nav.querySelector('#auth-user-badge')) return;
+    if (nav.closest('.public-navbar')) {
+      const slot = nav.querySelector('#public-auth-actions');
+      if (!slot || slot.dataset.authReady === '1') return;
+      slot.dataset.authReady = '1';
+      slot.innerHTML = '';
 
+      const isAdmin = Boolean(user.is_admin || user.role === 'developer' || user.role === 'admin');
+      const destination = isAdmin ? 'admin.html' : (user.business_type === 'seeker' ? 'seeker.html' : 'provider.html');
+      const homeLink = document.createElement('a');
+      homeLink.className = 'btn btn-sm public-auth-home';
+      homeLink.href = '/';
+      homeLink.textContent = 'Home';
+
+      const dashboardLink = document.createElement('a');
+      dashboardLink.className = 'btn btn-sm public-auth-dashboard';
+      dashboardLink.href = destination;
+      dashboardLink.textContent = 'Go to Dashboard';
+
+      const logoutBtn = document.createElement('button');
+      logoutBtn.className = 'btn btn-sm public-auth-logout';
+      logoutBtn.type = 'button';
+      logoutBtn.textContent = 'Log out';
+      logoutBtn.addEventListener('click', () => {
+        RivoraAPI.clearAuth();
+        window.location.href = 'index.html';
+      });
+
+      slot.append(homeLink, dashboardLink, logoutBtn);
+      return;
+    }
+
+    if (nav.querySelector('#auth-user-badge')) return;
     const badge = document.createElement('span');
     badge.id = 'auth-user-badge';
     badge.className = 'btn btn-ghost';
     badge.style.fontWeight = '600';
-    badge.style.color = '#B08D4F';
-    const emailSuffix = user.email ? ` · ${user.email}` : '';
-    badge.textContent = `${user.name || 'My Account'}${emailSuffix}`;
-    badge.title = `Active Tab Session: ${user.email || user.name} (${user.business_type || 'user'})`;
+    badge.textContent = user.name || 'My Account';
 
     const logoutBtn = document.createElement('button');
     logoutBtn.className = 'btn btn-ghost';
@@ -212,11 +239,8 @@ function initAuthUI() {
 
     const existingAuthLink = nav.querySelector('a[href="login.html"], a[href="signup.html"]');
     if (existingAuthLink) existingAuthLink.style.display = 'none';
-
-    nav.appendChild(badge);
-    nav.appendChild(logoutBtn);
+    nav.append(badge, logoutBtn);
   });
-
   // Dynamic user initials
   const initials = (user.name || 'Account')
     .split(' ')
@@ -361,6 +385,12 @@ document.addEventListener('DOMContentLoaded', () => {
   initNotifications();
   initZeus();
   initPremiumMotion();
+  const listingWeatherTimer = window.setInterval(() => {
+    const ids = [...new Set(Array.from(document.querySelectorAll('[data-weather-alert-for]'))
+      .map((slot) => Number(slot.dataset.weatherAlertFor)).filter((id) => Number.isInteger(id) && id > 0))];
+    if (ids.length) refreshWeatherNotices(ids);
+  }, 5 * 60 * 1000);
+  window.addEventListener('pagehide', () => window.clearInterval(listingWeatherTimer), { once: true });
 });
 
 /**
@@ -1163,6 +1193,22 @@ function initResourceForm() {
 
   const list = document.getElementById('listing-list');
   const confirm = document.getElementById('form-confirm');
+  const deviceLocationButton = document.getElementById('r-use-device-location');
+  deviceLocationButton?.addEventListener('click', () => {
+    if (!navigator.geolocation) { alert('Location access is not available in this browser.'); return; }
+    deviceLocationButton.disabled = true;
+    deviceLocationButton.textContent = 'Locating…';
+    navigator.geolocation.getCurrentPosition((position) => {
+      document.getElementById('r-latitude').value = position.coords.latitude.toFixed(6);
+      document.getElementById('r-longitude').value = position.coords.longitude.toFixed(6);
+      deviceLocationButton.textContent = 'Venue coordinates added';
+      deviceLocationButton.disabled = false;
+    }, (error) => {
+      deviceLocationButton.textContent = 'Use my current location';
+      deviceLocationButton.disabled = false;
+      alert(error.message || 'Could not read your location. Enter the venue coordinates manually.');
+    }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 });
+  });
 
   // Initialize Provider Business Proof Banner
   const bannerUploadBtn = document.getElementById('btn-provider-banner-upload');
@@ -1306,6 +1352,8 @@ function initResourceForm() {
     const priceUnit = document.getElementById('r-price-unit').value.toLowerCase();
     const minDuration = document.getElementById('r-min-duration') ? parseInt(document.getElementById('r-min-duration').value, 10) : 1;
     const conditions = document.getElementById('r-conditions') ? document.getElementById('r-conditions').value.trim() : '';
+    const latitudeInput = document.getElementById('r-latitude')?.value;
+    const longitudeInput = document.getElementById('r-longitude')?.value;
 
     if (!name || !type || !price) return;
 
@@ -1360,6 +1408,7 @@ function initResourceForm() {
     list.prepend(card);
 
     form.reset();
+    if (deviceLocationButton) deviceLocationButton.textContent = 'Use my current location';
     selectedPhotos = [];
     renderPhotoPreviews();
     confirm.hidden = false;
@@ -1381,7 +1430,9 @@ function initResourceForm() {
         price_unit: priceUnit.includes('day') ? 'per_day' : 'per_hour',
         min_duration: minDuration || 1,
         conditions_text: conditions || null,
-        location: 'Mumbai',
+        location: RivoraAPI.getUser()?.location || 'Mumbai',
+        latitude: latitudeInput ? Number(latitudeInput) : undefined,
+        longitude: longitudeInput ? Number(longitudeInput) : undefined,
         image_url: imageUrl || null,
         images: uploadedUrls,
       }).then((res) => {
@@ -1443,18 +1494,20 @@ function initResourceForm() {
                 <span class="listing-meta">${escapeHtml(t(RESOURCE_TYPE_KEYS[typeName] || 'resource.type'))}${r.capacity ? ' · ' + escapeHtml(t('resource.capacity')) + ' ' + I18N.num(r.capacity) : ''} · ${I18N.money(r.price_per_unit)}/${escapeHtml(t(r.price_unit === 'per_day' ? 'resource.perDay' : 'resource.perHour'))}</span>
               </div>
             </div>
+            <div class="weather-resource-notice" data-weather-alert-for="${r.id}" hidden></div>
             <div style="display:flex; align-items:center; gap: 0.8rem;">
               <span class="badge ${badgeClass}"><i></i>${badgeLabel}</span>
               <span class="view-listing-arrow">View Details →</span>
             </div>
           `;
           const navToDetails = () => { window.location.href = `resource-details.html?id=${r.id}`; };
-          card.addEventListener('click', navToDetails);
+          card.addEventListener('click', (event) => { if (!event.target.closest('a')) navToDetails(); });
           card.addEventListener('keydown', (e) => {
             if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); navToDetails(); }
           });
           list.appendChild(card);
         });
+        refreshWeatherNotices(myList.filter((r) => r.status === 'active').map((r) => r.id));
       } else {
         list.innerHTML = `<div class="requests-empty" style="padding: 2rem; text-align: center; color: var(--ink-faint);">No listings yet. Add your first resource above!</div>`;
       }
@@ -1827,8 +1880,8 @@ function initSeekerSearch() {
             defaultScore: preset.score,
             available: r.status === 'active',
             shortNotice: true,
-            lat: 19.1197 + ((r.id * 7) % 20) * 0.004,
-            lng: 72.8468 + ((r.id * 11) % 20) * 0.004,
+            lat: r.latitude != null && Number.isFinite(Number(r.latitude)) ? Number(r.latitude) : null,
+            lng: r.longitude != null && Number.isFinite(Number(r.longitude)) ? Number(r.longitude) : null,
             providerId: `p${r.provider_id}`,
             image_url: r.image_url || null,
             provider_verified: Boolean(r.provider_verified)
@@ -2061,6 +2114,8 @@ function renderResults(list, requirement) {
     const piClass = VISUAL_CLASS[r.type] || 'pi-hotel';
     const isFav = favorites.has(r.id);
     const badgeClass = r.score >= 90 ? STATUS_BADGE.confirmed : r.score >= 75 ? STATUS_BADGE.active : STATUS_BADGE.negotiating;
+    const twinImpact = window.resourceTwinImpact?.(r) || null;
+    const shownPrice = r.price * (twinImpact?.multiplier || 1);
 
     const visualContent = r.image_url
       ? `<img src="${escapeHtml(r.image_url)}" alt="${escapeHtml(r.name)}" style="width:100%;height:100%;object-fit:cover;display:block;" loading="lazy">`
@@ -2083,12 +2138,14 @@ function renderResults(list, requirement) {
         <span class="result-type">${escapeHtml(t(RESOURCE_TYPE_KEYS[r.type] || 'resource.type'))}</span>
         <div class="result-name" data-resource-id="${r.id}">${escapeHtml(r.name)}</div>
         <div class="result-provider">${escapeHtml(r.provider)} ${r.provider_verified ? '<span title="Government & Business Proof Verified" style="color:#3D8067; font-weight:700; font-size:0.75rem; background:#E8F2E8; border:1px solid #BED8C5; padding:0.1rem 0.4rem; border-radius:999px; margin-left:0.25rem;">Verified Business</span>' : ''} · ${escapeHtml(r.location)}</div>
+        <div class="weather-resource-notice" data-weather-alert-for="${r.id}" hidden></div>
         <div class="result-meta">
           <span class="result-rating">★ ${I18N.num(r.rating.toFixed(1))}</span>
           <span>${escapeHtml(t('resource.capacity'))} ${I18N.num(r.capacity)}</span>
           <span>${I18N.num(r.distanceKm)} ${escapeHtml(t('common.km'))}</span>
         </div>
-        <div class="result-price">${I18N.money(r.price)} <span>${escapeHtml(t(r.unit === 'day' ? 'common.perDay' : 'common.perHour'))}</span></div>
+        ${twinImpact ? `<div class="twin-resource-badge twin-resource-badge--${twinImpact.kind}">${escapeHtml(twinImpact.label)}</div>` : ''}
+        <div class="result-price">${I18N.money(shownPrice)} <span>${escapeHtml(t(r.unit === 'day' ? 'common.perDay' : 'common.perHour'))}</span></div>
         <div class="match-row">
           <div class="match-bar"><div class="match-bar-fill" style="width:${r.score}%"></div></div>
           <span class="match-label">${I18N.num(r.score)}%</span>
@@ -2177,6 +2234,30 @@ function renderResults(list, requirement) {
 
   updateCompareBar();
   renderMapMarkers(scored); // keep the map in sync with whatever the grid just showed
+  refreshWeatherNotices(scored.map((resource) => resource.id));
+}
+
+async function refreshWeatherNotices(resourceIds) {
+  if (!window.RivoraAPI || !resourceIds?.length) return;
+  try {
+    const response = await RivoraAPI.getResourceWeatherAlerts(resourceIds);
+    const alerts = response?.alerts || {};
+    document.querySelectorAll('[data-weather-alert-for]').forEach((slot) => {
+      const alert = alerts[String(slot.dataset.weatherAlertFor)];
+      if (!alert) { slot.hidden = true; slot.innerHTML = ''; return; }
+      const start = alert.window_start ? new Date(alert.window_start).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : 'next hour';
+      const end = alert.window_end ? new Date(alert.window_end).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) : '';
+      const windowLabel = end ? `${start}–${end}` : `around ${start}`;
+      const alternatives = (alert.alternatives || []).map((item) => `<a href="${escapeHtml(item.url)}">${escapeHtml(item.name)}${item.distance_km != null ? ` · ${I18N.num(item.distance_km)} km` : ''}</a>`).join(', ');
+      slot.innerHTML = `<strong>Rain advisory · ${I18N.num(alert.probability_percent)}% chance</strong> at this location ${escapeHtml(windowLabel)}${alert.precipitation_mm != null ? ` · ${I18N.num(alert.precipitation_mm)} mm forecast` : ''}.${alternatives ? ` Consider an indoor alternative: ${alternatives}.` : ''} <span>Forecast: ${escapeHtml(alert.source)}.</span>`;
+      slot.hidden = false;
+    });
+  } catch (error) {
+    document.querySelectorAll('[data-weather-alert-for]').forEach((slot) => {
+      if (resourceIds.includes(Number(slot.dataset.weatherAlertFor))) { slot.hidden = true; slot.innerHTML = ''; }
+    });
+    console.warn('[RivoraAPI] Could not refresh listing weather advisories:', error.message);
+  }
 }
 
 function updateCompareBar() {
@@ -2332,6 +2413,17 @@ async function initResourceDetails() {
     }
   }
 
+  let weatherNotice = document.getElementById('detail-weather-notice');
+  if (!weatherNotice && providerEl) {
+    weatherNotice = document.createElement('div');
+    weatherNotice.id = 'detail-weather-notice';
+    weatherNotice.className = 'weather-resource-notice';
+    weatherNotice.dataset.weatherAlertFor = String(currentResource.id);
+    weatherNotice.hidden = true;
+    providerEl.insertAdjacentElement('afterend', weatherNotice);
+  }
+  refreshWeatherNotices([currentResource.id]);
+
   const typeEl = document.getElementById('detail-type');
   if (typeEl && currentResource.type) {
     typeEl.textContent = currentResource.type.charAt(0).toUpperCase() + currentResource.type.slice(1);
@@ -2360,20 +2452,24 @@ async function initResourceDetails() {
     }).catch((e) => console.warn('Could not load trust profile:', e));
 
     // Load authentic completed-booking reviews
-    RivoraAPI.request(`/reviews/resource/${currentResource.id}`).then((revs) => {
+    RivoraAPI.getResourceReviews(currentResource.id).then((reviews) => {
       const container = document.getElementById('real-reviews-container');
-      if (container && revs && revs.length > 0) {
-        container.innerHTML = revs.map((r) => `
-          <div class="review-item">
-            <div class="review-head">
-              <span class="review-author">${escapeHtml(r.reviewer_name || 'Verified Seeker')} <span class="admin-badge admin-badge--verified" style="font-size:0.68rem; margin-left:0.25rem;">✓ Verified Booking</span></span>
-              <span class="review-rating">${r.rating}.0 ★</span>
-            </div>
-            <p class="review-text">${escapeHtml(r.comment || 'Seamless transaction, highly recommended.')}</p>
-          </div>
-        `).join('');
+      if (!container) return;
+      if (!Array.isArray(reviews) || reviews.length === 0) {
+        container.innerHTML = '<p class="calendar-hint">No verified reviews yet. Customers can review after a booking is completed.</p>';
+        return;
       }
-    }).catch(() => {});
+      container.innerHTML = reviews.map((review) =>
+        '<div class="review-item"><div class="review-head">' +
+          '<span class="review-author">' + escapeHtml(review.reviewer_name || 'Verified customer') +
+          ' <span class="admin-badge admin-badge--verified" style="font-size:0.68rem; margin-left:0.25rem;">✓ Verified booking</span></span>' +
+          '<span class="review-rating">' + Number(review.rating) + '.0 ★</span></div>' +
+          '<p class="review-text">' + escapeHtml(review.comment || '') + '</p></div>'
+      ).join('');
+    }).catch(() => {
+      const container = document.getElementById('real-reviews-container');
+      if (container) container.innerHTML = '<p class="calendar-hint">Could not load verified reviews.</p>';
+    });
   }
 
   // Populate Gallery
@@ -2847,11 +2943,12 @@ async function initResourceDetails() {
   // Initialize Leaflet Map
   const detailMapEl = document.getElementById('resource-detail-map');
   if (detailMapEl && typeof L !== 'undefined') {
-    const pos = { lat: 19.1197 + ((currentResource.id * 7) % 20) * 0.004, lng: 72.8468 + ((currentResource.id * 11) % 20) * 0.004 };
+    const hasCoordinates = currentResource.latitude != null && currentResource.longitude != null;
+    const pos = hasCoordinates ? { lat: Number(currentResource.latitude), lng: Number(currentResource.longitude) } : { lat: 19.076, lng: 72.8777 };
     const detailMap = L.map(detailMapEl, { scrollWheelZoom: false }).setView([pos.lat, pos.lng], 14);
     addMapBaseLayer(detailMap);
     const icon = L.divIcon({ className: '', html: '<div class="map-marker map-marker--available"><span>R</span></div>', iconSize: [28, 28], iconAnchor: [14, 28] });
-    L.marker([pos.lat, pos.lng], { icon }).addTo(detailMap).bindPopup(`<strong>${escapeHtml(currentResource.name)}</strong><br>${escapeHtml(currentResource.location || 'Mumbai')}`).openPopup();
+    if (hasCoordinates) L.marker([pos.lat, pos.lng], { icon }).addTo(detailMap).bindPopup(`<strong>${escapeHtml(currentResource.name)}</strong><br>${escapeHtml(currentResource.location || 'Mumbai')}`).openPopup();
     setTimeout(() => detailMap.invalidateSize(), 200);
   }
 
@@ -3321,6 +3418,7 @@ async function initRequestsPage() {
       return;
     }
     items.forEach((r) => list.appendChild(buildRequestCard(r, render)));
+    refreshWeatherNotices(items.map((r) => r.resourceId).filter(Boolean));
   }
 
   window.refreshRequestsList = render;
@@ -3354,6 +3452,7 @@ async function initRequestsPage() {
             priceNum: priceNum,
             price: I18N.money(priceNum),
             status: b.status || 'pending',
+            resourceId: b.resource_id,
             rawBooking: b
           });
         });
@@ -3441,6 +3540,7 @@ function buildRequestCard(r, onRefresh) {
       </div>
       <span class="badge ${badgeClass}"><i></i>${escapeHtml(statusText)}</span>
     </div>
+    <div class="weather-resource-notice" data-weather-alert-for="${Number(r.resourceId) || ''}" ${r.resourceId ? '' : 'hidden'}></div>
     ${buildStepper(r.status)}
     <div class="request-card-footer">
       <div class="request-actions">${buildFooterActions(r)}</div>
@@ -3914,7 +4014,7 @@ async function initProfileReviewForm() {
     if (!submittedReviews.length) {
       const emptyState = document.createElement('p');
       emptyState.className = 'calendar-hint';
-      emptyState.textContent = 'You have not submitted any reviews yet.';
+      emptyState.textContent = 'You have not submitted any verified reviews yet.';
       reviewsList.appendChild(emptyState);
       return;
     }
@@ -3935,13 +4035,66 @@ async function initProfileReviewForm() {
       rating.textContent = String(review.rating) + '.0 ★';
       const text = document.createElement('p');
       text.className = 'review-text';
-      text.textContent = review.comment || 'No written feedback provided.';
+      text.textContent = review.comment || '';
       head.append(author, rating);
       item.append(head, text);
       reviewsList.appendChild(item);
     });
   };
 
+  const renderReceivedReviews = (receivedReviews) => {
+    const list = document.getElementById('profile-received-reviews-list');
+    const average = document.getElementById('profile-rating-average');
+    const bars = document.getElementById('profile-rating-bars');
+    const count = document.getElementById('profile-rating-count');
+    if (!list || !average || !bars || !count) return;
+
+    list.innerHTML = '';
+    bars.innerHTML = '';
+    if (!receivedReviews.length) {
+      average.textContent = '—';
+      count.textContent = 'No verified customer reviews yet.';
+      for (let rating = 5; rating >= 1; rating -= 1) {
+        const row = document.createElement('div');
+        row.className = 'rating-bar-row';
+        row.innerHTML = '<span>' + rating + '★</span><div class="util-bar"><div class="util-bar-fill" style="width:0%"></div></div>';
+        bars.appendChild(row);
+      }
+      list.innerHTML = '<p class="calendar-hint">Your verified customer reviews will appear here after a completed booking is reviewed.</p>';
+      return;
+    }
+
+    const total = receivedReviews.length;
+    const sum = receivedReviews.reduce((value, review) => value + Number(review.rating || 0), 0);
+    average.textContent = (sum / total).toFixed(1);
+    count.textContent = 'Based on ' + total + ' verified customer review' + (total === 1 ? '' : 's');
+    for (let rating = 5; rating >= 1; rating -= 1) {
+      const ratingCount = receivedReviews.filter(review => Number(review.rating) === rating).length;
+      const row = document.createElement('div');
+      row.className = 'rating-bar-row';
+      row.innerHTML = '<span>' + rating + '★</span><div class="util-bar"><div class="util-bar-fill" style="width:' + Math.round((ratingCount / total) * 100) + '%"></div></div>';
+      bars.appendChild(row);
+    }
+
+    receivedReviews.slice(0, 10).forEach(review => {
+      const item = document.createElement('div');
+      item.className = 'review-item';
+      const head = document.createElement('div');
+      head.className = 'review-head';
+      const author = document.createElement('span');
+      author.className = 'review-author';
+      author.textContent = (review.reviewer_name || 'Verified customer') + ' · ' + (review.resource_name || 'Completed service');
+      const rating = document.createElement('span');
+      rating.className = 'review-rating';
+      rating.textContent = String(review.rating) + '.0 ★';
+      const body = document.createElement('p');
+      body.className = 'review-text';
+      body.textContent = review.comment || '';
+      head.append(author, rating);
+      item.append(head, body);
+      list.appendChild(item);
+    });
+  };
   if (!window.RivoraAPI || !RivoraAPI.isAuthenticated()) {
     bookingSelect.innerHTML = '<option value="">Sign in to review a booking</option>';
     bookingSelect.disabled = true;
@@ -3954,7 +4107,7 @@ async function initProfileReviewForm() {
   try {
     const response = await RivoraAPI.getMyBookings();
     completedBookings = (Array.isArray(response) ? response : [])
-      .filter(booking => String(booking.status || '').toLowerCase() === 'completed');
+      .filter(booking => String(booking.status || '').toLowerCase() === 'completed' && booking.is_provider !== true);
     bookingSelect.innerHTML = '';
     const placeholder = document.createElement('option');
     placeholder.value = '';
@@ -3994,6 +4147,14 @@ async function initProfileReviewForm() {
     renderRecentReviews();
   } catch (error) {
     if (reviewsList) reviewsList.textContent = error.message || 'Could not load your recent reviews.';
+  }
+
+  try {
+    const receivedReviews = await RivoraAPI.getReceivedReviews();
+    renderReceivedReviews(Array.isArray(receivedReviews) ? receivedReviews : []);
+  } catch (error) {
+    const receivedList = document.getElementById('profile-received-reviews-list');
+    if (receivedList) receivedList.textContent = error.message || 'Could not load verified customer reviews.';
   }
 
   form.addEventListener('submit', async event => {
@@ -5178,6 +5339,7 @@ async function initNotifications() {
   const CATEGORIES = [
     { id: 'all', label: 'All' },
     { id: 'requests', label: 'Requests' },
+    { id: 'weather', label: 'Weather' },
     { id: 'transactions', label: 'Transactions' },
     { id: 'messages', label: 'Messages' },
     { id: 'payments', label: 'Payments' },
@@ -5327,7 +5489,7 @@ async function initNotifications() {
       <div class="notif-items-scroll" style="max-height: 340px; overflow-y: auto;">
         ${notifsList.length ? notifsList.map((n) => {
           const isUnread = !n.is_read;
-          const tone = (n.category === 'security' || n.category === 'payments') ? 'amber' : ((n.category === 'verification' || n.category === 'transactions') ? 'teal' : ((n.category === 'requests') ? 'brand' : 'sky'));
+          const tone = (n.category === 'security' || n.category === 'payments') ? 'amber' : ((n.category === 'verification' || n.category === 'transactions') ? 'teal' : ((n.category === 'requests' || n.category === 'weather') ? 'brand' : 'sky'));
           const timeFormatted = n.created_at ? new Date(n.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
           return `
             <div class="notif-item ${isUnread ? 'is-unread' : ''}" data-notif-id="${n.id}" style="cursor:pointer;">
@@ -5399,8 +5561,12 @@ async function initNotifications() {
   await loadNotifications();
   await checkForIncomingRequests();
   requestSyncTimer = window.setInterval(checkForIncomingRequests, 30000);
+  const weatherNotificationTimer = window.setInterval(async () => {
+    if (window.RivoraAPI?.isAuthenticated?.()) await loadNotifications();
+  }, 5 * 60 * 1000);
   window.addEventListener('pagehide', () => {
     if (requestSyncTimer) window.clearInterval(requestSyncTimer);
+    window.clearInterval(weatherNotificationTimer);
   }, { once: true });
   window.refreshNotifications = loadNotifications;
 }
@@ -6642,6 +6808,7 @@ function refreshChat() {
 let resourceMap = null;
 let mapMarkers = {};   // resource id -> Leaflet marker
 let userMarker = null;
+let userAccuracyCircle = null;
 let mapRadiusKm = 10;
 
 const MAP_PREVIEW_MESSAGE = 'Map preview shown. Run the app through its local server to load interactive street tiles.';
@@ -6736,6 +6903,12 @@ function initResourceMap() {
       evt.preventDefault();
       focusResultCard(parseInt(link.dataset.focusCard, 10));
     });
+    const reallocate = e.popup.getElement()?.querySelector('[data-reallocate-resource]');
+    reallocate?.addEventListener('click', () => {
+      reallocate.textContent = 'Reallocation staged';
+      reallocate.disabled = true;
+      window.dispatchEvent(new CustomEvent('rivora:twin-reallocate', { detail: { resourceId: reallocate.dataset.reallocateResource } }));
+    });
   });
 
   // Leaflet needs an explicit size recalculation once its container is
@@ -6745,15 +6918,31 @@ function initResourceMap() {
   window.addEventListener('resize', () => resourceMap && resourceMap.invalidateSize());
 }
 
-function addUserMarker(pos) {
+function addUserMarker(pos, accuracy = 0) {
+  if (!resourceMap) return;
   if (userMarker) resourceMap.removeLayer(userMarker);
-  const icon = L.divIcon({ className: '', html: '<div class="map-marker map-marker--you"></div>', iconSize: [18, 18] });
+  if (userAccuracyCircle) resourceMap.removeLayer(userAccuracyCircle);
+  const icon = L.divIcon({ className: '', html: '<div class="map-marker map-marker--you"><span></span></div>', iconSize: [20, 20], iconAnchor: [10, 10] });
   userMarker = L.marker([pos.lat, pos.lng], { icon, zIndexOffset: 1000 })
     .addTo(resourceMap)
     .bindPopup(escapeHtml(t('map.yourLocation')));
+  if (Number.isFinite(accuracy) && accuracy > 0) {
+    userAccuracyCircle = L.circle([pos.lat, pos.lng], {
+      radius: accuracy / 2,
+      color: '#3B82F6',
+      fillColor: '#3B82F6',
+      fillOpacity: 0.15,
+      weight: 1.5,
+      className: 'twin-location-accuracy'
+    }).addTo(resourceMap);
+  }
 }
 
 function requestUserLocation() {
+  if (typeof window.detectTwinLocation === 'function') {
+    window.detectTwinLocation();
+    return;
+  }
   const note = document.getElementById('map-note');
   if (!navigator.geolocation) {
     note.hidden = false; note.textContent = t('map.locateDenied');
@@ -6782,7 +6971,8 @@ function renderMapMarkers(list) {
 
   list.forEach((r) => {
     if (typeof r.lat !== 'number') return;
-    const tone = r.available === false ? 'unavailable' : 'available';
+    const impact = window.resourceTwinImpact?.(r) || null;
+    const tone = impact ? impact.kind : (r.available === false ? 'unavailable' : 'available');
     const icon = L.divIcon({
       className: '', html: `<div class="map-marker map-marker--${tone}"><span>${escapeHtml(RESOURCE_TYPE_ICON[r.type] || '●')}</span></div>`,
       iconSize: [28, 28], iconAnchor: [14, 28],
@@ -6808,11 +6998,16 @@ function renderMapMarkers(list) {
 const RESOURCE_TYPE_ICON = { Space: 'S', Kitchen: 'K', Vehicle: 'V', Furniture: 'F', 'AV Equipment': 'AV', Staff: 'T', Parking: 'P' };
 
 function buildMapPopup(r) {
+  const impact = window.resourceTwinImpact?.(r) || null;
+  const demandMultiplier = impact?.kind === 'surge' ? (window.currentTwinScenario?.indoor_demand_surge_multiplier || 1) : 1;
+  const simulatedDemand = Math.round((Number(r.capacity) || 0) * demandMultiplier);
   return `
     <div class="map-popup-type">${escapeHtml(t(RESOURCE_TYPE_KEYS[r.type] || 'resource.type'))}</div>
     <div class="map-popup-name">${escapeHtml(r.name)}</div>
     <div class="map-popup-meta">${escapeHtml(r.provider)} · ${I18N.num(r.distanceKm)} ${escapeHtml(t('common.km'))}</div>
     <div class="map-popup-price">${I18N.money(r.price)} ${escapeHtml(t(r.unit === 'day' ? 'common.perDay' : 'common.perHour'))}</div>
+    <div class="map-popup-twin">Normal capacity: ${I18N.num(r.capacity)} · Simulated demand: ${I18N.num(simulatedDemand)}${impact ? ` · ${escapeHtml(impact.label)}` : ''}</div>
+    <button class="map-popup-reallocate" type="button" data-reallocate-resource="${r.id}">Reallocate resource</button>
     <a class="map-popup-link" href="#" data-focus-card="${r.id}">${escapeHtml(t('map.viewDetails'))} →</a>`;
 }
 

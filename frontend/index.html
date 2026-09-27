@@ -19,7 +19,7 @@
 <body class="home-page">
 
 <header class="navbar public-navbar">
-  <a class="brand" href="index.html"><span class="brand-mark"></span><span>RIVORA<span class="brand-tagline" data-i18n="brand.tagline">HOSPITALITY EXCHANGE</span></span></a>
+  <a class="brand" href="/" aria-label="Rivora home"><span class="brand-mark"></span><span>RIVORA<span class="brand-tagline" data-i18n="brand.tagline">HOSPITALITY EXCHANGE</span></span></a>
   <button class="mobile-nav-toggle" type="button" aria-label="Open navigation" aria-controls="public-nav-drawer" aria-expanded="false"><span></span><span></span><span></span></button>
   <button class="mobile-nav-backdrop" type="button" aria-label="Close navigation" tabindex="-1"></button>
   <div class="public-nav-drawer" id="public-nav-drawer">
@@ -27,14 +27,17 @@
       <a href="index.html" class="is-active" data-i18n="nav.home">Home</a>
       <a href="#how-it-works" data-i18n="nav.howItWorks">How It Works</a>
       <a href="#resources" data-i18n="nav.resources">Resources</a>
+      <a href="#weather-news-section">Weather &amp; News</a>
       <a href="signup.html?role=provider" data-i18n="nav.forProviders">For Providers</a>
       <a href="signup.html?role=seeker" data-i18n="nav.forSeekers">For Seekers</a>
       <a href="#trust" data-i18n="nav.about">About</a>
     </nav>
     <div class="navbar-actions">
       <div data-lang-switcher></div>
-      <a class="btn btn-ghost" href="login.html" data-i18n="nav.login">Login</a>
-      <a class="btn btn-primary btn-sm" href="signup.html" data-i18n="nav.getStarted">Get Started</a>
+      <div class="public-auth-actions" id="public-auth-actions">
+        <a class="btn btn-sm public-auth-login" href="login.html" data-i18n="nav.login">Login</a>
+        <a class="btn btn-sm public-auth-primary" href="signup.html" data-i18n="nav.getStarted">Get Started</a>
+      </div>
     </div>
   </div>
 </header>
@@ -101,6 +104,31 @@
           <div class="hcard-body"><div class="hcard-name">Royal Banquet Hall</div><div class="hcard-meta">₹<span data-i18n-num="21500">21,500</span><span data-i18n="common.perDay">/day</span> · <span data-i18n-num="300">300</span> <span data-i18n="common.capacity">capacity</span></div></div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- ============ PUBLIC WEATHER & LOCAL SIGNALS ============ -->
+  <section class="section weather-public-section" id="weather-news-section">
+    <div class="container">
+      <section class="panel weather-intel-panel" aria-labelledby="public-weather-intel-title">
+        <div class="panel-head weather-intel-head">
+          <div><h2 class="panel-title" id="public-weather-intel-title">Weather &amp; News</h2><p class="weather-intel-subtitle">Local weather conditions, a six-hour forecast, and recent public reports. Risk badges are Rivora estimates; follow official IMD warnings.</p><div class="weather-intel-context"><span class="weather-intel-place" id="weather-intel-city-label">Navi Mumbai</span><span class="weather-intel-live-pill"><i></i> LIVE</span><span class="weather-intel-risk-pill" id="weather-intel-header-risk" data-level="normal">Flood: Normal</span></div></div>
+          <div class="weather-intel-controls"><label class="visually-hidden" for="weather-intel-city">Weather location</label><select id="weather-intel-city"><option value="Navi Mumbai">Navi Mumbai</option><option value="Panvel">Panvel</option><option value="Mumbai">Mumbai</option><option value="Thane">Thane</option></select><button class="btn btn-outline btn-sm" id="weather-intel-locate" type="button">Use my location</button></div>
+        </div>
+        <div class="weather-intel-status" id="weather-intel-status" role="status">Connecting to live weather…</div>
+        <div class="weather-intel-overview">
+          <div class="weather-intel-hero"><span id="weather-intel-icon" aria-hidden="true">🌡️</span><div><strong id="weather-intel-temperature">--°</strong><span id="weather-intel-condition">Waiting for weather</span></div></div>
+          <div class="weather-intel-metric"><span>Precipitation</span><b id="weather-intel-rain">-- mm/h</b></div>
+          <div class="weather-intel-metric"><span>Humidity</span><b id="weather-intel-humidity">--%</b></div>
+          <div class="weather-intel-metric"><span>Wind</span><b id="weather-intel-wind">-- km/h</b></div>
+          <div class="weather-intel-metric"><span>Flood risk</span><b id="weather-intel-flood" data-level="normal">Normal</b></div>
+        </div>
+        <div class="weather-intel-lower">
+          <div class="weather-intel-block"><div class="weather-intel-block-head"><h3>Next 6 hours</h3><span>Local forecast</span></div><div class="weather-timeline" id="weather-intel-timeline" aria-live="polite"><span class="weather-empty">Loading forecast…</span></div></div>
+          <div class="weather-intel-block"><div class="weather-intel-block-head"><h3>Local operations signals</h3><span id="weather-intel-news-source">Public reports</span></div><div class="weather-news-list" id="weather-intel-signals" aria-live="polite"><span class="weather-empty">Loading local reports…</span></div></div>
+        </div>
+        <a class="weather-map-link" href="seeker.html#weather-news-section">Open the mapped Digital Twin and run a weather scenario <span aria-hidden="true">→</span></a>
+      </section>
     </div>
   </section>
 
@@ -368,7 +396,7 @@
   <div class="container">
     <div class="footer-grid">
       <div class="footer-col">
-        <a class="brand" href="index.html"><span class="brand-mark"></span><span>RIVORA<span class="brand-tagline" data-i18n="brand.tagline">HOSPITALITY EXCHANGE</span></span></a>
+        <a class="brand" href="/" aria-label="Rivora home"><span class="brand-mark"></span><span>RIVORA<span class="brand-tagline" data-i18n="brand.tagline">HOSPITALITY EXCHANGE</span></span></a>
         <p style="margin-top: 1rem; max-width: 32ch;" data-i18n="footer.about">The B2B exchange for spare hospitality capacity — rooms, halls, kitchens, vehicles and equipment.</p>
         <div class="footer-socials"><a href="#">LinkedIn</a><a href="#">Instagram</a><a href="#">X</a></div>
       </div>
@@ -384,6 +412,7 @@
 <script src="js/translations.js"></script>
 <script src="js/api.js"></script>
 <script src="js/script.js"></script>
+<script src="js/weather-intel.js"></script>
 
 <script>
 /* ---- Live Featured Resources from backend ---- */

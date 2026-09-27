@@ -93,6 +93,25 @@ Plain HTML/CSS/JS — no build step. Pages:
    Your frontend teammate can test every endpoint here without writing any
    frontend code first, and it doubles as always-up-to-date API documentation.
 
+### Weather, news, and Digital Twin setup
+
+The provider dashboard's **Weather & News** card reads live conditions and a
+six-hour forecast from Open-Meteo. The Seeker map includes the coordinate-aware
+weather baseline, public local reports, geospatial scenario overlay, and the
+what-if cascade model. `/api/weather/intel` returns weather and local reports in
+one response; `/api/twin/live-telemetry`, `/api/twin/social-signals`, and
+`/api/twin/simulate` remain available for the map and simulator.
+
+To enable keyed NewsAPI results locally, set `NEWS_API_KEY` in `backend/.env`.
+The backend sends the key in the `X-Api-Key` header; it is never sent to the
+browser. When no usable key or no matching recent articles are available, the
+backend tries location-filtered Google News RSS. If public feeds are
+unavailable, it returns clearly labeled sample reports. Add the key as a secret
+environment variable in Render for deployment. Do not commit `.env`.
+
+The API key shared in the project chat should be rotated before using it. Add
+the replacement key to the backend environment after rotation.
+
 ## API contract for the frontend
 
 Base URL during development: `http://localhost:8000`

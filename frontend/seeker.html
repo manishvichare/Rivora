@@ -35,6 +35,10 @@
         <svg viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.8"/><path d="M20 20l-3.5-3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
         <span data-i18n="nav.search">Search</span>
       </a>
+      <a class="sidebar-link sidebar-link--weather" href="#weather-news-section" aria-label="Weather and news">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7.5 18.5h9a4 4 0 0 0 .5-7.97A5.5 5.5 0 0 0 6.45 9.2a4.7 4.7 0 0 0 1.05 9.3Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 2.5v1.8M4.4 5.1l1.3 1.3m12.6-1.3L17 6.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span>Weather &amp; News</span><span class="sidebar-live-badge"><i></i> LIVE</span>
+      </a>
       <a class="sidebar-link" href="requests.html">
         <svg viewBox="0 0 24 24" fill="none"><path d="M3 12l2.5-7A2 2 0 0 1 7.4 3.5h9.2a2 2 0 0 1 1.9 1.5L21 12v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M3 12h5l1.5 2.5h5L16 12h5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
         <span data-i18n="nav.requests">Requests</span>
@@ -147,7 +151,7 @@
         </div>
       </section>
 
-      <section class="panel panel--map">
+      <section class="panel panel--map" id="weather-news-section">
         <div class="panel-head">
           <h2 class="panel-title" data-i18n="map.title">Map view</h2>
           <div class="map-controls">
@@ -159,7 +163,41 @@
             <button class="btn btn-outline btn-sm" id="map-locate-btn" type="button"><span data-i18n="map.locate">Use my location</span></button>
           </div>
         </div>
-        <div id="resource-map" role="img" aria-label="Map of resource locations"></div>
+        <section class="weather-intel-panel weather-intel-panel--seeker" aria-labelledby="seeker-weather-intel-title">
+          <div class="panel-head weather-intel-head">
+            <div><h2 class="panel-title" id="seeker-weather-intel-title">Weather &amp; News</h2><p class="weather-intel-subtitle">Live local conditions and a six-hour forecast. Use the map location button to update both views.</p><div class="weather-intel-context"><span class="weather-intel-place" id="weather-intel-city-label">Navi Mumbai</span><span class="weather-intel-live-pill"><i></i> LIVE</span><span class="weather-intel-risk-pill" id="weather-intel-header-risk" data-level="normal">Flood: Normal</span></div></div>
+            <div class="weather-intel-controls"><label class="visually-hidden" for="weather-intel-city">Weather location</label><select id="weather-intel-city"><option value="Navi Mumbai">Navi Mumbai</option><option value="Panvel">Panvel</option><option value="Mumbai">Mumbai</option><option value="Thane">Thane</option></select></div>
+          </div>
+          <div class="weather-intel-status" id="weather-intel-status" role="status">Connecting to live weather…</div>
+          <div class="weather-intel-overview">
+            <div class="weather-intel-hero"><span id="weather-intel-icon" aria-hidden="true">🌡️</span><div><strong id="weather-intel-temperature">--°</strong><span id="weather-intel-condition">Waiting for weather</span></div></div>
+            <div class="weather-intel-metric"><span>Precipitation</span><b id="weather-intel-rain">-- mm/h</b></div>
+            <div class="weather-intel-metric"><span>Humidity</span><b id="weather-intel-humidity">--%</b></div>
+            <div class="weather-intel-metric"><span>Wind</span><b id="weather-intel-wind">-- km/h</b></div>
+            <div class="weather-intel-metric"><span>Flood risk</span><b id="weather-intel-flood" data-level="normal">Normal</b></div>
+          </div>
+          <div class="weather-intel-block weather-intel-block--timeline"><div class="weather-intel-block-head"><h3>Next 6 hours</h3><span>Local forecast</span></div><div class="weather-timeline" id="weather-intel-timeline" aria-live="polite"><span class="weather-empty">Loading forecast…</span></div></div>
+        </section>
+        <section class="twin-hub" aria-labelledby="twin-title">
+          <div class="twin-hub-top">
+            <div><span class="twin-kicker">RIVORA DIGITAL TWIN</span><h3 id="twin-title">Weather impact simulator</h3></div>
+            <div class="twin-live" id="digital-twin-status" aria-live="polite">
+              <span class="twin-chip twin-chip--live"><span class="twin-live-dot"></span><span><span id="twin-live-city">Navi Mumbai</span>: <span id="twin-temp">--°C</span></span></span>
+              <span class="twin-chip twin-chip--rain">Rain: <span id="twin-rain">-- mm/h</span></span>
+              <span class="twin-chip twin-chip--alert" id="twin-flood-badge" data-level="normal" title="Flood alert">Flood: Normal</span>
+              <span class="twin-chip twin-chip--alert" id="twin-storm-badge" data-level="normal" title="Storm alert">Storm: Clear</span>
+              <span class="twin-condition" id="twin-condition">Connecting…</span>
+            </div>
+          </div>
+          <div class="twin-controls">
+            <label class="twin-control"><span>Rainfall intensity <b><span id="twin-rain-value">0</span> mm/h</b></span><input id="twin-rain-slider" type="range" min="0" max="100" value="0" step="1"></label>
+            <label class="twin-control"><span>Storm duration <b><span id="twin-duration-value">2</span> hrs</b></span><input id="twin-duration" type="range" min="1" max="6" value="2" step="1"></label>
+            <label class="twin-zone-control" for="twin-zone">Affected zone<select id="twin-zone"><option>Navi Mumbai</option><option>Panvel</option><option>Mumbai</option><option>Andheri</option><option>Powai</option><option>Thane</option></select></label>
+            <div class="twin-actions"><button class="btn btn-primary btn-sm" id="twin-run" type="button">Simulate Cascade</button><button class="btn btn-outline btn-sm" id="twin-reset" type="button">Reset to live</button></div>
+          </div>
+          <div class="twin-result" id="twin-result" aria-live="polite" hidden></div>
+        </section>
+        <div id="resource-map" role="img" aria-label="Map of resource locations and simulated weather impacts"></div>
         <div class="map-legend">
           <span><i class="map-legend-dot map-legend-dot--available"></i><span data-i18n="map.legendAvailable">Available</span></span>
           <span><i class="map-legend-dot map-legend-dot--unavailable"></i><span data-i18n="map.legendUnavailable">Unavailable</span></span>
@@ -167,6 +205,10 @@
           <span class="map-attribution" data-i18n="map.attribution">Map data from OpenStreetMap contributors.</span>
         </div>
         <p class="map-note" id="map-note" hidden></p>
+        <section class="signal-feed" aria-labelledby="signal-title">
+          <div class="signal-feed-head"><h3 id="signal-title">Local operations signals</h3><span class="signal-demo-label" id="signal-mode">Demo signals</span></div>
+          <div class="signal-list" id="signal-list" aria-live="polite"><span class="signal-item">Loading situational reports…</span></div>
+        </section>
       </section>
 
       <div class="seeker-layout">
@@ -210,6 +252,8 @@
 <script src="js/leaflet.js"></script>
 <script src="js/translations.js"></script>
 <script src="js/api.js"></script>
+<script src="js/digital-twin.js"></script>
 <script src="js/script.js"></script>
+<script src="js/weather-intel.js"></script>
 </body>
 </html>

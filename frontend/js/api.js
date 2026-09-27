@@ -249,6 +249,12 @@ const RivoraAPI = {
     return this.request(`/resources/${id}`, { method: "GET" });
   },
 
+  async getResourceWeatherAlerts(resourceIds = []) {
+    const q = new URLSearchParams();
+    resourceIds.slice(0, 40).forEach((id) => q.append("resource_ids", id));
+    return this.request(`/api/weather/resource-alerts?${q.toString()}`, { method: "GET" });
+  },
+
   async getMyResources() {
     return this.request("/resources/mine/list", {
       method: "GET",
@@ -598,6 +604,10 @@ const RivoraAPI = {
   // Reviews
   async getMyReviews() {
     return this.request("/reviews/mine", { method: "GET", requireAuth: true });
+  },
+
+  async getReceivedReviews() {
+    return this.request("/reviews/received", { method: "GET", requireAuth: true });
   },
 
   async getResourceReviews(resourceId) {

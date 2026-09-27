@@ -1,0 +1,25 @@
+ .gitignore                         |   2 [32m+[m
+ README.md                          |  19 [32m++[m
+ backend/.env.example               |   2 [32m+[m
+ backend/config.py                  |   3 [32m+[m
+ backend/main.py                    |   6 [32m+[m[31m-[m
+ backend/requirements.txt           |   1 [32m+[m
+ backend/routes/digital_twin.py     | 213 [32m++++++++++++++++++++++[m
+ backend/routes/notifications.py    |   4 [32m+[m[31m-[m
+ backend/routes/resources.py        |   6 [32m+[m
+ backend/routes/reviews.py          |  76 [32m++++++[m[31m--[m
+ backend/routes/weather.py          | 208 [32m++++++++++++++++++++++[m
+ backend/schemas.py                 |  23 [32m++[m[31m-[m
+ backend/services/local_signals.py  | 198 [32m+++++++++++++++++++++[m
+ backend/services/weather_alerts.py | 173 [32m++++++++++++++++++[m
+ frontend/css/style.css             | 189 [32m++++++++++++++++++++[m
+ frontend/index.html                |  37 [32m+++[m[31m-[m
+ frontend/js/api.js                 |  10 [32m++[m
+ frontend/js/digital-twin.js        | 356 [32m+++++++++++++++++++++++++++++++++++++[m
+ frontend/js/script.js              | 267 [32m++++++++++++++++++++++++[m[31m----[m
+ frontend/js/weather-intel.js       | 227 [32m+++++++++++++++++++++++[m
+ frontend/profile.html              |  17 [32m+[m[31m-[m
+ frontend/provider.html             |  39 [32m+++[m[31m-[m
+ frontend/resource-details.html     |   3 [32m+[m[31m-[m
+ frontend/seeker.html               |  48 [32m++++[m[31m-[m
+ 24 files changed, 2049 insertions(+), 78 deletions(-)

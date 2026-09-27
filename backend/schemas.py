@@ -172,6 +172,8 @@ class ResourceOut(BaseModel):
     image_url: Optional[str] = None
     images: Optional[List[str]] = None
     location: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
     status: str
     provider_verified: bool = False
     match_score: Optional[float] = None  # populated only by /resources/search
@@ -311,17 +313,27 @@ class RequirementOut(RequirementCreate):
 class ReviewCreate(BaseModel):
     booking_id: int
     rating: int = Field(ge=1, le=5)
-    comment: Optional[str] = None
+    comment: str = Field(min_length=10, max_length=2000)
+
+    @field_validator("comment")
+    @classmethod
+    def require_meaningful_review(cls, value: str) -> str:
+        cleaned = value.strip()
+        if len(cleaned) < 10:
+            raise ValueError("Please write at least 10 characters of feedback.")
+        return cleaned
 
 
-class ReviewOut(ReviewCreate):
+class ReviewOut(BaseModel):
     id: int
+    booking_id: int
     reviewer_id: int
     reviewer_name: Optional[str] = None
+    rating: int
+    comment: Optional[str] = None
     created_at: Optional[datetime] = None
-
-    class Config:
-        from_attributes = True
+    resource_name: Optional[str] = None
+    provider_name: Optional[str] = None
 
 
 # ---------- Chat Message ----------
@@ -619,5 +631,4 @@ class DuplicateFlagOut(BaseModel):
 
     class Config:
         from_attributes = True
-
 
