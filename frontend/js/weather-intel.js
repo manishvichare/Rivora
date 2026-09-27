@@ -10,6 +10,7 @@
   };
   const locationCoordinates = { ...cityCoordinates };
   let requestId = 0;
+  let rateLimitRetryTimer = null;
   let activeLocation = { city: 'Navi Mumbai', ...cityCoordinates['Navi Mumbai'] };
 
   const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
@@ -116,10 +117,19 @@
 
     const status = document.getElementById('weather-intel-status');
     const observed = data.observed_at ? ` · Updated ${formatTime(data.observed_at)}` : '';
-    status.textContent = data.status === 'Live Connected'
-      ? `Live weather from ${data.weather_source || 'Open-Meteo'}${observed}`
-      : 'Live weather is unavailable; fallback values are shown and labeled.';
-    status.dataset.mode = data.status === 'Live Connected' ? 'live' : 'fallback';
+    if (data.status === 'Live Connected') {
+      status.textContent = `Live weather from ${data.weather_source || 'Open-Meteo'}${observed}`;
+      status.dataset.mode = 'live';
+    } else if (data.status === 'Cached') {
+      status.textContent = `Open-Meteo rate limited requests; showing the last forecast from ${data.cache_age_minutes || 0} min ago.`;
+      status.dataset.mode = 'fallback';
+    } else if (data.status === 'Rate Limited') {
+      status.textContent = `Open-Meteo rate limit reached; retrying in about ${Math.max(1, Math.ceil((data.retry_after_seconds || 60) / 60))} min.`;
+      status.dataset.mode = 'fallback';
+    } else {
+      status.textContent = 'Live weather is unavailable; fallback values are shown and labeled.';
+      status.dataset.mode = 'fallback';
+    }
   }
 
   function fallbackData(city) {
@@ -140,6 +150,7 @@
   }
 
   async function loadWeather(location, selector, syncTwin = false, retryAttempt = 0) {
+    if (rateLimitRetryTimer) window.clearTimeout(rateLimitRetryTimer);
     activeLocation = location;
     if (selector) {
       ensureCityOption(selector, location.city);
@@ -156,7 +167,15 @@
       const response = await fetch(`${endpoint}?${params}`, { signal: AbortSignal.timeout(90000) });
       if (!response.ok) throw new Error(`Weather service returned ${response.status}`);
       const result = await response.json();
-      if (currentRequest === requestId) render(result, location.city);
+      if (currentRequest === requestId) {
+        render(result, location.city);
+        const retryAfter = Number(result.retry_after_seconds);
+        if (retryAfter > 0) {
+          rateLimitRetryTimer = window.setTimeout(() => {
+            if (currentRequest === requestId) loadWeather(location, selector);
+          }, Math.min(retryAfter + 2, 15 * 60) * 1000);
+        }
+      }
     } catch (error) {
       console.warn('[RivoraWeather] Live weather request failed:', error);
       if (currentRequest === requestId) {

@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import time
 from datetime import datetime, timedelta
 
 import httpx
@@ -21,6 +22,10 @@ router = APIRouter(tags=["weather-intelligence"])
 OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 optional_oauth = OAuth2PasswordBearer(tokenUrl="/auth/login", auto_error=False)
 logger = logging.getLogger(__name__)
+WEATHER_CACHE_SECONDS = 12 * 60
+_weather_cache: dict[tuple[float, float], tuple[float, dict]] = {}
+_weather_lock = asyncio.Lock()
+_weather_rate_limited_until = 0.0
 
 
 @router.get("/resource-alerts")
@@ -130,7 +135,7 @@ def _fallback_payload(lat: float, lon: float, city: str) -> dict:
     }
 
 
-async def _fetch_weather(lat: float, lon: float, city: str) -> dict:
+async def _fetch_weather_from_open_meteo(lat: float, lon: float, city: str) -> dict:
     params = {
         "latitude": lat,
         "longitude": lon,
@@ -188,9 +193,65 @@ async def _fetch_weather(lat: float, lon: float, city: str) -> dict:
             "weather_source": "Open-Meteo",
             "status": "Live Connected",
         }
+    except httpx.HTTPStatusError as exc:
+        if exc.response.status_code == 429:
+            global _weather_rate_limited_until
+            try:
+                retry_after = max(60, int(exc.response.headers.get("Retry-After", "60")))
+            except ValueError:
+                retry_after = 60
+            _weather_rate_limited_until = time.monotonic() + retry_after
+            fallback = _fallback_payload(lat, lon, city)
+            fallback.update({"status": "Rate Limited", "retry_after_seconds": retry_after})
+            logger.warning("Open-Meteo rate limit (429) for %.4f, %.4f; pausing requests for %s seconds", lat, lon, retry_after)
+            return fallback
+        logger.warning("Open-Meteo request failed for %.4f, %.4f: %s", lat, lon, exc)
+        return _fallback_payload(lat, lon, city)
     except (httpx.HTTPError, KeyError, TypeError, ValueError) as exc:
         logger.warning("Open-Meteo request failed for %.4f, %.4f: %s", lat, lon, exc)
         return _fallback_payload(lat, lon, city)
+
+
+def _cached_weather_response(lat: float, lon: float, city: str, cached: tuple[float, dict], *, stale: bool, retry_after: int = 0) -> dict:
+    fetched_at, payload = cached
+    response = {**payload, "city": city, "coordinates": {"lat": lat, "lon": lon}}
+    response["cache_age_minutes"] = max(0, int((time.monotonic() - fetched_at) // 60))
+    if stale:
+        response["status"] = "Cached"
+        response["retry_after_seconds"] = retry_after
+    return response
+
+
+async def _fetch_weather(lat: float, lon: float, city: str) -> dict:
+    """Cache forecasts and serialize misses so concurrent pages share one upstream request."""
+    key = (round(lat, 3), round(lon, 3))
+    now = time.monotonic()
+    cached = _weather_cache.get(key)
+    if cached and now - cached[0] < WEATHER_CACHE_SECONDS:
+        return _cached_weather_response(lat, lon, city, cached, stale=False)
+
+    async with _weather_lock:
+        now = time.monotonic()
+        cached = _weather_cache.get(key)
+        if cached and now - cached[0] < WEATHER_CACHE_SECONDS:
+            return _cached_weather_response(lat, lon, city, cached, stale=False)
+
+        retry_after = max(0, int(_weather_rate_limited_until - now))
+        if retry_after:
+            if cached:
+                return _cached_weather_response(lat, lon, city, cached, stale=True, retry_after=retry_after)
+            fallback = _fallback_payload(lat, lon, city)
+            fallback.update({"status": "Rate Limited", "retry_after_seconds": retry_after})
+            return fallback
+
+        payload = await _fetch_weather_from_open_meteo(lat, lon, city)
+        if payload.get("status") == "Live Connected":
+            _weather_cache[key] = (time.monotonic(), payload)
+        elif payload.get("status") == "Rate Limited":
+            cached = _weather_cache.get(key)
+            if cached:
+                return _cached_weather_response(lat, lon, city, cached, stale=True, retry_after=payload.get("retry_after_seconds", 60))
+        return payload
 
 
 @router.get("/intel")

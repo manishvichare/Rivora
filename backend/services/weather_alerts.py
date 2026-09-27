@@ -1,6 +1,7 @@
 """Coordinate-specific rain advisories for weather-sensitive listings."""
 
 import asyncio
+import logging
 import math
 import time
 from datetime import datetime, timedelta
@@ -14,6 +15,8 @@ OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
 ALERT_THRESHOLD = 50
 _forecast_cache: dict[tuple[float, float], tuple[float, dict]] = {}
 _request_limit = asyncio.Semaphore(5)
+_rate_limited_until = 0.0
+logger = logging.getLogger(__name__)
 
 
 def is_weather_sensitive(resource: models.Resource) -> bool:
@@ -28,19 +31,34 @@ def is_weather_sensitive(resource: models.Resource) -> bool:
 
 
 async def _forecast(lat: float, lon: float) -> dict | None:
+    global _rate_limited_until
     key = (round(lat, 3), round(lon, 3))
     cached = _forecast_cache.get(key)
-    if cached and time.monotonic() - cached[0] < 300:
+    if cached and time.monotonic() - cached[0] < 900:
         return cached[1]
+    if time.monotonic() < _rate_limited_until:
+        return None
     params = {
         "latitude": lat, "longitude": lon, "current": "precipitation", "hourly": "precipitation_probability,precipitation",
         "forecast_days": 2, "timezone": "auto",
     }
     try:
         async with _request_limit:
+            if time.monotonic() < _rate_limited_until:
+                return None
             async with httpx.AsyncClient(timeout=8.0) as client:
                 response = await client.get(OPEN_METEO_URL, params=params)
-                response.raise_for_status()
+                try:
+                    response.raise_for_status()
+                except httpx.HTTPStatusError as exc:
+                    if exc.response.status_code == 429:
+                        try:
+                            retry_after = max(60, int(exc.response.headers.get("Retry-After", "60")))
+                        except ValueError:
+                            retry_after = 60
+                        _rate_limited_until = time.monotonic() + retry_after
+                        logger.warning("Open-Meteo resource forecast rate limited (429); pausing requests for %s seconds", retry_after)
+                    raise
                 body = response.json()
         times = body["hourly"]["time"]
         probabilities = body["hourly"]["precipitation_probability"]
